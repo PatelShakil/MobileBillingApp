@@ -1,9 +1,22 @@
 package com.mycampus.billingapp
 
+import android.Manifest
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedContentScope.SlideDirection.Companion.End
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -53,23 +66,49 @@ import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color.Companion.Green
+import androidx.compose.ui.graphics.Color.Companion.Red
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.app.ActivityCompat
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_SCAN
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH,Manifest.permission.BLUETOOTH_ADMIN),1)
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+        }
         setContent {
             BiilingappTheme {
                 // A surface container using the 'background' color from the theme
@@ -573,7 +612,10 @@ fun HeaderLayout() {
     if (isSettingsExpanded) {
         SettingsPopup(
             userDetails.value,
-            onDismissRequest = { isSettingsExpanded = false }
+            onDismissRequest = { isSettingsExpanded = false },
+            onSaveClicked = {
+                Log.d("UserDetails",it.toString())
+            }
         )
     }
 
@@ -590,45 +632,256 @@ fun HeaderLayout() {
 }
 
 @Composable
-fun SettingsPopup(
-    userDetails: UserDetails,
-    onDismissRequest: () -> Unit
-) {
+fun BluetoothScreen() {
     val context = LocalContext.current
-    /*Dialog(onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Card(modifier = Modifier
-            .fillMaxWidth()
-            .padding(20.dp)) {
-            Column(modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White),
-            horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(modifier = Modifier.height(5.dp))
-                Text("Settings",
-                style = MaterialTheme.typography.titleSmall)
-                Spacer(modifier = Modifier.height(5.dp))
-                Divider(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(.5.dp), color = Color.Gray)
-                Spacer(modifier = Modifier.height(5.dp))
-                Column {
-                    Text("Name: ${userDetails.name}")
-                    Text("Email: ${userDetails.email}")
-                    Text("Address: ${userDetails.address}")
-                    Text("Mobile: ${userDetails.mobile}")
-                    Text("Website: ${userDetails.website}")
+    val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+
+    var isBluetoothEnabled by remember { mutableStateOf(bluetoothAdapter?.isEnabled == true) }
+    var pairedDevices by remember { mutableStateOf(emptyList<BluetoothDevice>()) }
+    var discoveredDevices by remember { mutableStateOf(emptyList<BluetoothDevice>()) }
+
+    val receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent) {
+            when (intent.action) {
+                BluetoothDevice.ACTION_FOUND -> {
+                    val device: BluetoothDevice? = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                    if (device != null) {
+                        discoveredDevices = discoveredDevices + device
+                    }
+                    Log.i("bluetooth", "device found")
                 }
-                Spacer(modifier = Modifier.height(10.dp))
-                Button(
-                        onClick = { onDismissRequest() }
-                ) {
-                Text("Close")
-            }
+                BluetoothAdapter.ACTION_DISCOVERY_STARTED -> {
+                    Log.i("bluetooth", "started discovery")
+                }
+                BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
+                    Log.i("bluetooth", "finished discovery")
+                }
             }
         }
-    }*/
+    }
+
+    DisposableEffect(Unit) {
+        if (isBluetoothEnabled) {
+            context.registerReceiver(receiver, IntentFilter(BluetoothDevice.ACTION_FOUND))
+            context.registerReceiver(receiver, IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED))
+            context.registerReceiver(receiver, IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED))
+            bluetoothAdapter?.startDiscovery()
+            pairedDevices = bluetoothAdapter?.bondedDevices?.toList() ?: emptyList()
+        }
+        onDispose {
+            if (!isBluetoothEnabled) {
+//                context.unregisterReceiver(receiver)
+                bluetoothAdapter?.cancelDiscovery()
+            }
+        }
+    }
+
+    if (!isBluetoothEnabled) {
+        requestBluetoothPermission(context)
+    }
+
+
+    Column(
+        modifier = Modifier
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Bluetooth Devices",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Button(
+                onClick = {
+                    if (isBluetoothEnabled) {
+                        bluetoothAdapter?.disable().apply {
+                            if (this!!)
+                                isBluetoothEnabled = false
+                        }
+                    } else {
+                        bluetoothAdapter?.enable().apply {
+                            if (this!!)
+                                isBluetoothEnabled = true
+                        }
+                    }
+                },
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = White
+                )
+            ) {
+                Icon(painter = painterResource(id = if (isBluetoothEnabled) R.drawable.ic_bluetooth_enable else R.drawable.ic_bluetooth_disable), contentDescription = "",
+                tint = if(isBluetoothEnabled) Green else Red)
+            }
+        }
+
+        Text("Paired Devices:", style = MaterialTheme.typography.titleSmall)
+
+        // List of recently connected Bluetooth pairing devices
+        LazyColumn {
+            items(pairedDevices) { device ->
+                Text(device.name ?: "Unnamed Device",
+                style = MaterialTheme.typography.bodySmall)
+            }
+        }
+
+        Text("Discovered Devices:", style = MaterialTheme.typography.titleSmall)
+
+        // List of recently discovered Bluetooth pairing devices
+        LazyColumn {
+            items(discoveredDevices) { device ->
+                Text(device.name ?: "Unnamed Device",
+                    style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+@Composable
+private fun requestBluetoothPermission(context: Context) {
+    val enableBluetoothIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+    val activityResultLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == ComponentActivity.RESULT_OK) {
+                Log.i("bluetooth", "request permission result OK")
+            } else {
+                Log.i("bluetooth", "request permission result CANCELED/DENIED")
+            }
+        }
+    LaunchedEffect(activityResultLauncher) {
+        activityResultLauncher.launch(enableBluetoothIntent)
+    }
+}
+
+
+@Composable
+fun BluetoothScreenNew() {
+    val context = LocalContext.current
+    val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+
+    val isBluetoothEnabled by remember { mutableStateOf(bluetoothAdapter?.isEnabled == true) }
+    var pairedDevices by remember { mutableStateOf(emptyList<BluetoothDevice>()) }
+    var discoveredDevices by remember { mutableStateOf(emptyList<BluetoothDevice>()) }
+
+    val receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent) {
+            when (intent.action) {
+                BluetoothDevice.ACTION_FOUND -> {
+                    val device: BluetoothDevice? = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                    if (device != null) {
+                        discoveredDevices = discoveredDevices + device
+                    }
+                    Log.i("bluetooth", "device found")
+                }
+                BluetoothAdapter.ACTION_DISCOVERY_STARTED -> {
+                    Log.i("bluetooth", "started discovery")
+                }
+                BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
+                    Log.i("bluetooth", "finished discovery")
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val foundFilter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+        val startFilter = IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED)
+        val endFilter = IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
+        context.registerReceiver(receiver, foundFilter)
+        context.registerReceiver(receiver, startFilter)
+        context.registerReceiver(receiver, endFilter)
+        Log.i("bluetooth", "filters registered")
+    }
+
+    if (!isBluetoothEnabled) {
+        requestBluetoothPermission(context)
+    }
+
+    pairedDevices = bluetoothAdapter?.bondedDevices?.toList() ?: emptyList()
+
+    var isBluetoothElseCall by remember{ mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Bluetooth Devices",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Button(
+                onClick = {
+                    if (isBluetoothEnabled) {
+                        bluetoothAdapter?.disable()
+                    } else {
+                        bluetoothAdapter?.enable()
+                    }
+                },
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = if (isBluetoothEnabled) Color.Red else Color.Green
+                )
+            ) {
+                Text(text = if (isBluetoothEnabled) "Disable Bluetooth" else "Enable Bluetooth")
+            }
+        }
+
+        Text("Paired Devices:", style = MaterialTheme.typography.bodySmall)
+
+        // List of recently connected Bluetooth pairing devices
+        LazyColumn {
+            items(pairedDevices) { device ->
+                Text(device.name ?: "Unnamed Device")
+            }
+        }
+
+        Text("Discovered Devices:", style = MaterialTheme.typography.bodySmall)
+
+        // List of recently discovered Bluetooth pairing devices
+        LazyColumn {
+            items(discoveredDevices) { device ->
+                Text(device.name ?: "Unnamed Device")
+            }
+        }
+    }
+}
+@Composable
+private fun requestBluetoothPermissionNew(context: Context) {
+    val enableBluetoothIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+    val activityResultLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == ComponentActivity.RESULT_OK) {
+                Log.i("bluetooth", "request permission result OK")
+            } else {
+                Log.i("bluetooth", "request permission result CANCELED/DENIED")
+            }
+        }
+    LaunchedEffect(activityResultLauncher) {
+        activityResultLauncher.launch(enableBluetoothIntent)
+    }
+}
+@Composable
+fun SettingsPopup(
+    userDetails: UserDetails,
+    onDismissRequest: () -> Unit,
+    onSaveClicked: (UserDetails) -> Unit
+) {
+    val context = LocalContext.current
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text("Settings") },
@@ -638,17 +891,50 @@ fun SettingsPopup(
             ) {
                 Text("Close")
             }
+            Button(
+                onClick = {
+                    onSaveClicked(userDetails)
+                    onDismissRequest()
+                }
+            ) {
+                Text("Save")
+            }
         },
         text = {
             Column {
-                Text("Name: ${userDetails.name}")
-                Text("Email: ${userDetails.email}")
-                Text("Address: ${userDetails.address}")
-                Text("Mobile: ${userDetails.mobile}")
-                Text("Website: ${userDetails.website}")
+                SettingsTextFieldSample(label = "Name", onTextChanged = {
+                    userDetails.name = it
+                })
+                SettingsTextFieldSample(label = "Email", onTextChanged = {
+                                                                         userDetails.email = it
+                }, KeyboardType.Email)
+                SettingsTextFieldSample(label = "Address", onTextChanged = {
+                    userDetails.address = it
+                })
+                SettingsTextFieldSample(label = "Mobile", onTextChanged = {
+                                                                          userDetails.mobile = it
+                }, KeyboardType.Phone)
+                SettingsTextFieldSample(label = "Website", onTextChanged = {
+                    userDetails.website = it
+                })
             }
         },
     )
+}
+
+@Composable
+fun SettingsTextFieldSample(label:String,onTextChanged:(String) -> Unit,keyboardType: KeyboardType = KeyboardType.Text) {
+    var value by remember{ mutableStateOf("") }
+    androidx.compose.material.TextField(value = value, onValueChange = {
+        onTextChanged(it)
+        value = it
+    },
+    modifier = Modifier.fillMaxWidth(.95f),
+    label = {Text(label,style = MaterialTheme.typography.titleSmall)},
+    colors = TextFieldDefaults.textFieldColors(
+        backgroundColor = White,
+        focusedIndicatorColor = MainColor
+    ))
 }
 
 @Composable
@@ -663,6 +949,7 @@ fun PrinterPopup(
         onDismissRequest = onDismissRequest,
         title = { Text("Printer Connection") },
         text = {
+/*
             Column {
                 Text("Selected Printer: $selectedPrinter")
                 Spacer(modifier = Modifier.height(8.dp))
@@ -680,6 +967,8 @@ fun PrinterPopup(
                     }
                 }
             }
+*/
+               BluetoothScreen()
         },
         confirmButton = {
             Button(
@@ -692,11 +981,11 @@ fun PrinterPopup(
 }
 
 data class UserDetails(
-    val name: String,
-    val email: String,
-    val address: String,
-    val mobile: String,
-    val website: String
+    var name: String,
+    var email: String,
+    var address: String,
+    var mobile: String,
+    var website: String
 )
 
 
