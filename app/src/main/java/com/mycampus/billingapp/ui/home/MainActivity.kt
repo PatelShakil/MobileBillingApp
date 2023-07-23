@@ -1,23 +1,17 @@
-package com.mycampus.billingapp
+package com.mycampus.billingapp.ui.home
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
-import android.content.BroadcastReceiver
-import android.content.Context
+import android.bluetooth.BluetoothManager
 import android.content.Intent
-import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
-import androidx.compose.animation.AnimatedContentScope.SlideDirection.Companion.End
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,95 +26,106 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Checkbox
-import androidx.compose.material.TextField
-import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import com.mycampus.billingapp.ui.theme.BiilingappTheme
-import kotlin.math.roundToInt
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialogDefaults
-import androidx.compose.material3.CardDefaults
-import androidx.compose.runtime.*
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color.Companion.Green
-import androidx.compose.ui.graphics.Color.Companion.Red
-import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.graphics.Color.Companion.White
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.app.ActivityCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import com.mycampus.billingapp.ui.theme.BiilingappTheme
+import dagger.hilt.android.AndroidEntryPoint
+import kotlin.math.roundToInt
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private val bluetoothManager by lazy {
+        applicationContext.getSystemService(BluetoothManager::class.java)
+    }
+    private val bluetoothAdapter by lazy {
+        bluetoothManager?.adapter
+    }
+
+    private val isBluetoothEnabled: Boolean
+        get() = bluetoothAdapter?.isEnabled == true
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.BLUETOOTH_CONNECT
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.BLUETOOTH_SCAN
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH,Manifest.permission.BLUETOOTH_ADMIN),1)
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+
+        val enableBluetoothLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { /* Not needed */ }
+
+        val permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { perms ->
+            val canEnableBluetooth = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                perms[Manifest.permission.BLUETOOTH_CONNECT] == true
+            } else true
+
+            if (canEnableBluetooth && !isBluetoothEnabled) {
+                enableBluetoothLauncher.launch(
+                    Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+                )
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                )
+            )
         }
         setContent {
             BiilingappTheme {
                 // A surface container using the 'background' color from the theme
+                val viewModel = hiltViewModel<BluetoothViewModel>()
+                val state by viewModel.state.collectAsState()
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        HeaderLayout()
+                        HeaderLayout(state, onStartScan = {
+                            if (!isBluetoothEnabled) {
+                                enableBluetoothLauncher.launch(
+                                    Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+                                )
+                            }
+                            viewModel.startScan()
+                        }, onStopScan = viewModel::stopScan)
                         MainScreenFees(
-                                onProceedClicked = {},
-                        navController = NavController(LocalContext.current)
+                            onProceedClicked = {},
+                            navController = NavController(LocalContext.current)
                         )
                     }
 
@@ -129,15 +134,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 val MainColor = Color(0xFF00638E)
+
 data class CollectFeeData(
-    val totalAmount: Double=0.0,
-    val discount: Double=0.0,
+    val totalAmount: Double = 0.0,
+    val discount: Double = 0.0,
 //    val othrItemlist: List<OtherItemsInfo>
 )
 
 @Composable
-fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit,navController: NavController ) {
+fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navController: NavController) {
     val context = LocalContext.current
 //    var studentName = viewModel.studentName.collectAsState()
 //    var className = viewModel.className.collectAsState()
@@ -154,7 +161,7 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit,navControlle
 
     val onBackPressedDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val openPostPaymnetDialog = remember { mutableStateOf(false) }
-    val openPrePaymnetDialog=remember { mutableStateOf(false) }
+    val openPrePaymnetDialog = remember { mutableStateOf(false) }
 //    val payFee = viewModel.payFee.collectAsState()
 //    val othrItemlist: List<OtherItemsInfo>
     var transactionRemark by remember { mutableStateOf("Paid by Cash") }
@@ -181,7 +188,10 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit,navControlle
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(5.dp))
-            Row(modifier = Modifier.fillMaxWidth(.95f), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(.95f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     "Collect other Fee",
 
@@ -207,12 +217,14 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit,navControlle
                             })
                 }
             }
-            Divider(modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp))
+            Divider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+            )
             Spacer(modifier = Modifier.height(5.dp))
-            var discountAmount by remember{ mutableStateOf(0.0) }
-            var totalAmount  = 0.0
+            var discountAmount by remember { mutableStateOf(0.0) }
+            var totalAmount = 0.0
 
             Box(modifier = Modifier.fillMaxWidth(.94f), contentAlignment = Alignment.Center) {
                 Text(
@@ -226,9 +238,11 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit,navControlle
                     fontWeight = FontWeight.Bold,
                 )
             }
-            Divider(modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp))
+            Divider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+            )
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -268,7 +282,8 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit,navControlle
                                 )
                             )
                             Box(modifier = Modifier.weight(.3f)) {
-                                getAmount(onAmountSet = { amount.value = it
+                                getAmount(onAmountSet = {
+                                    amount.value = it
 
                                 })
                             }
@@ -276,25 +291,32 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit,navControlle
                         }
 //                        listOfFinalData.add(OtherItemsInfo( amount.value, item.value))
                     }
-                    Divider(modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp))
+                    Divider(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                    )
                 }
                 Spacer(modifier = Modifier.height(3.dp))
-                Row(modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically) {
-                    Text("Discount",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Black,
-                        modifier = Modifier.padding(start= 10.dp,end = 20.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Discount",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier.padding(start = 10.dp, end = 20.dp)
                     )
                     SampleTextFieldDouble(label = "Discount", text = 0.0, onAmountSet = {
                         discountAmount = it
-                        })
+                    })
                 }
-                Divider(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp))
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                )
             }
 
             val isOnileModeChecked = remember { mutableStateOf(false) }
@@ -314,11 +336,10 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit,navControlle
                     checked = isOnileModeChecked.value,
                     onCheckedChange = {
                         isOnileModeChecked.value = !isOnileModeChecked.value
-                        if(it){
-                            transactionRemark="Paid By PhonePay"
-                        }
-                        else{
-                            transactionRemark="Paid by Cash"
+                        if (it) {
+                            transactionRemark = "Paid By PhonePay"
+                        } else {
+                            transactionRemark = "Paid by Cash"
                         }
                     })
             }
@@ -341,11 +362,12 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit,navControlle
                     },
                     value = transactionRemark,
                     onValueChange = {
-                        transactionRemark=it
+                        transactionRemark = it
                     },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Done),
+                        imeAction = ImeAction.Done
+                    ),
                     colors = TextFieldDefaults.textFieldColors(backgroundColor = White)
                 )
             } else {
@@ -450,15 +472,16 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit,navControlle
                 }
             }*/
 
-            Button(onClick = {
-                openPrePaymnetDialog.value = true
-                //onProceedClicked(feeDataList)
-            },
-                enabled = totalAmount>0
+            Button(
+                onClick = {
+                    openPrePaymnetDialog.value = true
+                    //onProceedClicked(feeDataList)
+                },
+                enabled = totalAmount > 0
 //                        && listOfFinalData.isNotEmpty()
             ) {
                 Text(
-                    "Pay Rs ${if (totalAmount > 0 )totalAmount - discountAmount else totalAmount}",
+                    "Pay Rs ${if (totalAmount > 0) totalAmount - discountAmount else totalAmount}",
                     color = Color.White,
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier
@@ -486,7 +509,7 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit,navControlle
                             androidx.compose.material3.Text(
                                 text = "Total  Amount  - $INR ${totalAmount} \n" +
                                         "Discount Amount - $INR ${discountAmount}  \n" +
-                                        "Going to Pay    - $INR ${totalAmount-discountAmount.roundToInt()}  \n" +
+                                        "Going to Pay    - $INR ${totalAmount - discountAmount.roundToInt()}  \n" +
                                         //"Balance Amount  - $INR ${0.0}",
                                         "Payment Mode - ${transactionRemark} ",
                                 style = MaterialTheme.typography.titleSmall,
@@ -537,14 +560,23 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit,navControlle
 
 
 @Composable
-fun HeaderLayout() {
+fun HeaderLayout(state: BluetoothUiState, onStartScan: () -> Unit, onStopScan: () -> Unit) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
     var isPrinterExpanded by remember { mutableStateOf(false) }
-    var selectedPrinter by remember { mutableStateOf("") }
 
     // Replace with your desired user details
-    val userDetails = remember{mutableStateOf(UserDetails("John Doe", "johndoe@example.com", "123 Main St", "555-123-4567", "www.example.com"))}
+    val userDetails = remember {
+        mutableStateOf(
+            UserDetails(
+                "John Doe",
+                "johndoe@example.com",
+                "123 Main St",
+                "555-123-4567",
+                "www.example.com"
+            )
+        )
+    }
 
     TopAppBar(
         title = {
@@ -568,36 +600,36 @@ fun HeaderLayout() {
                         modifier = Modifier.clickable { isMenuExpanded = !isMenuExpanded }
                     )
                     DropdownMenu(
-                            expanded = isMenuExpanded,
-                    onDismissRequest = { isMenuExpanded = false },
+                        expanded = isMenuExpanded,
+                        onDismissRequest = { isMenuExpanded = false },
                     ) {
-                    DropdownMenuItem(
-                        onClick = {
-                            isMenuExpanded = false
-                            // Handle Settings menu item click
-                            isSettingsExpanded = true
+                        DropdownMenuItem(
+                            onClick = {
+                                isMenuExpanded = false
+                                // Handle Settings menu item click
+                                isSettingsExpanded = true
+                            }
+                        ) {
+                            Text("Settings")
                         }
-                    ) {
-                        Text("Settings")
-                    }
-                    DropdownMenuItem(
-                        onClick = {
-                            isMenuExpanded = false
-                            // Handle Printer Connection menu item click
-                            isPrinterExpanded = true
+                        DropdownMenuItem(
+                            onClick = {
+                                isMenuExpanded = false
+                                // Handle Printer Connection menu item click
+                                isPrinterExpanded = true
+                            }
+                        ) {
+                            Text("Printer Connection")
                         }
-                    ) {
-                        Text("Printer Connection")
-                    }
-                    DropdownMenuItem(
-                        onClick = {
-                            isMenuExpanded = false
-                            // Handle Others menu item click
+                        DropdownMenuItem(
+                            onClick = {
+                                isMenuExpanded = false
+                                // Handle Others menu item click
+                            }
+                        ) {
+                            Text("Others")
                         }
-                    ) {
-                        Text("Others")
                     }
-                }
                 }
 
             }
@@ -614,267 +646,21 @@ fun HeaderLayout() {
             userDetails.value,
             onDismissRequest = { isSettingsExpanded = false },
             onSaveClicked = {
-                Log.d("UserDetails",it.toString())
+                Log.d("UserDetails", it.toString())
             }
         )
     }
 
     if (isPrinterExpanded) {
         PrinterPopup(
-            selectedPrinter,
-            onPrinterSelected = { printer ->
-                selectedPrinter = printer
-                isPrinterExpanded = false
-            },
-            onDismissRequest = { isPrinterExpanded = false }
-        )
+            state.pairedDevices,
+            state.scannedDevices,
+            onStartScan = onStartScan,
+            onStopScan = onStopScan,
+        ) { isPrinterExpanded = false }
     }
 }
 
-@Composable
-fun BluetoothScreen() {
-    val context = LocalContext.current
-    val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-
-    var isBluetoothEnabled by remember { mutableStateOf(bluetoothAdapter?.isEnabled == true) }
-    var pairedDevices by remember { mutableStateOf(emptyList<BluetoothDevice>()) }
-    var discoveredDevices by remember { mutableStateOf(emptyList<BluetoothDevice>()) }
-
-    val receiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent) {
-            when (intent.action) {
-                BluetoothDevice.ACTION_FOUND -> {
-                    val device: BluetoothDevice? = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-                    if (device != null) {
-                        discoveredDevices = discoveredDevices + device
-                    }
-                    Log.i("bluetooth", "device found")
-                }
-                BluetoothAdapter.ACTION_DISCOVERY_STARTED -> {
-                    Log.i("bluetooth", "started discovery")
-                }
-                BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
-                    Log.i("bluetooth", "finished discovery")
-                }
-            }
-        }
-    }
-
-    DisposableEffect(Unit) {
-        if (isBluetoothEnabled) {
-            context.registerReceiver(receiver, IntentFilter(BluetoothDevice.ACTION_FOUND))
-            context.registerReceiver(receiver, IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED))
-            context.registerReceiver(receiver, IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED))
-            bluetoothAdapter?.startDiscovery()
-            pairedDevices = bluetoothAdapter?.bondedDevices?.toList() ?: emptyList()
-        }
-        onDispose {
-            if (!isBluetoothEnabled) {
-//                context.unregisterReceiver(receiver)
-                bluetoothAdapter?.cancelDiscovery()
-            }
-        }
-    }
-
-    if (!isBluetoothEnabled) {
-        requestBluetoothPermission(context)
-    }
-
-
-    Column(
-        modifier = Modifier
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Bluetooth Devices",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            Button(
-                onClick = {
-                    if (isBluetoothEnabled) {
-                        bluetoothAdapter?.disable().apply {
-                            if (this!!)
-                                isBluetoothEnabled = false
-                        }
-                    } else {
-                        bluetoothAdapter?.enable().apply {
-                            if (this!!)
-                                isBluetoothEnabled = true
-                        }
-                    }
-                },
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = White
-                )
-            ) {
-                Icon(painter = painterResource(id = if (isBluetoothEnabled) R.drawable.ic_bluetooth_enable else R.drawable.ic_bluetooth_disable), contentDescription = "",
-                tint = if(isBluetoothEnabled) Green else Red)
-            }
-        }
-
-        Text("Paired Devices:", style = MaterialTheme.typography.titleSmall)
-
-        // List of recently connected Bluetooth pairing devices
-        LazyColumn {
-            items(pairedDevices) { device ->
-                Text(device.name ?: "Unnamed Device",
-                style = MaterialTheme.typography.bodySmall)
-            }
-        }
-
-        Text("Discovered Devices:", style = MaterialTheme.typography.titleSmall)
-
-        // List of recently discovered Bluetooth pairing devices
-        LazyColumn {
-            items(discoveredDevices) { device ->
-                Text(device.name ?: "Unnamed Device",
-                    style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-}
-
-@Composable
-private fun requestBluetoothPermission(context: Context) {
-    val enableBluetoothIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-    val activityResultLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == ComponentActivity.RESULT_OK) {
-                Log.i("bluetooth", "request permission result OK")
-            } else {
-                Log.i("bluetooth", "request permission result CANCELED/DENIED")
-            }
-        }
-    LaunchedEffect(activityResultLauncher) {
-        activityResultLauncher.launch(enableBluetoothIntent)
-    }
-}
-
-
-@Composable
-fun BluetoothScreenNew() {
-    val context = LocalContext.current
-    val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-
-    val isBluetoothEnabled by remember { mutableStateOf(bluetoothAdapter?.isEnabled == true) }
-    var pairedDevices by remember { mutableStateOf(emptyList<BluetoothDevice>()) }
-    var discoveredDevices by remember { mutableStateOf(emptyList<BluetoothDevice>()) }
-
-    val receiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent) {
-            when (intent.action) {
-                BluetoothDevice.ACTION_FOUND -> {
-                    val device: BluetoothDevice? = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-                    if (device != null) {
-                        discoveredDevices = discoveredDevices + device
-                    }
-                    Log.i("bluetooth", "device found")
-                }
-                BluetoothAdapter.ACTION_DISCOVERY_STARTED -> {
-                    Log.i("bluetooth", "started discovery")
-                }
-                BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
-                    Log.i("bluetooth", "finished discovery")
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        val foundFilter = IntentFilter(BluetoothDevice.ACTION_FOUND)
-        val startFilter = IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED)
-        val endFilter = IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
-        context.registerReceiver(receiver, foundFilter)
-        context.registerReceiver(receiver, startFilter)
-        context.registerReceiver(receiver, endFilter)
-        Log.i("bluetooth", "filters registered")
-    }
-
-    if (!isBluetoothEnabled) {
-        requestBluetoothPermission(context)
-    }
-
-    pairedDevices = bluetoothAdapter?.bondedDevices?.toList() ?: emptyList()
-
-    var isBluetoothElseCall by remember{ mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Bluetooth Devices",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            Button(
-                onClick = {
-                    if (isBluetoothEnabled) {
-                        bluetoothAdapter?.disable()
-                    } else {
-                        bluetoothAdapter?.enable()
-                    }
-                },
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = if (isBluetoothEnabled) Color.Red else Color.Green
-                )
-            ) {
-                Text(text = if (isBluetoothEnabled) "Disable Bluetooth" else "Enable Bluetooth")
-            }
-        }
-
-        Text("Paired Devices:", style = MaterialTheme.typography.bodySmall)
-
-        // List of recently connected Bluetooth pairing devices
-        LazyColumn {
-            items(pairedDevices) { device ->
-                Text(device.name ?: "Unnamed Device")
-            }
-        }
-
-        Text("Discovered Devices:", style = MaterialTheme.typography.bodySmall)
-
-        // List of recently discovered Bluetooth pairing devices
-        LazyColumn {
-            items(discoveredDevices) { device ->
-                Text(device.name ?: "Unnamed Device")
-            }
-        }
-    }
-}
-@Composable
-private fun requestBluetoothPermissionNew(context: Context) {
-    val enableBluetoothIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-    val activityResultLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == ComponentActivity.RESULT_OK) {
-                Log.i("bluetooth", "request permission result OK")
-            } else {
-                Log.i("bluetooth", "request permission result CANCELED/DENIED")
-            }
-        }
-    LaunchedEffect(activityResultLauncher) {
-        activityResultLauncher.launch(enableBluetoothIntent)
-    }
-}
 @Composable
 fun SettingsPopup(
     userDetails: UserDetails,
@@ -882,102 +668,219 @@ fun SettingsPopup(
     onSaveClicked: (UserDetails) -> Unit
 ) {
     val context = LocalContext.current
-    androidx.compose.material3.AlertDialog(
+    var isEditable by remember { mutableStateOf(false) }
+    Dialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("Settings") },
-        confirmButton = {
-            Button(
-                onClick = { onDismissRequest() }
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFEAE9F0))
+                    .padding(20.dp)
             ) {
-                Text("Close")
-            }
-            Button(
-                onClick = {
-                    onSaveClicked(userDetails)
-                    onDismissRequest()
+                Text(
+                    "Settings",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 22.sp,
+                    modifier = Modifier.padding(10.dp)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Column() {
+                    if (isEditable) {
+                        Column {
+                            SettingsTextFieldSample(label = "Name",value = userDetails.name, onTextChanged = {
+                                userDetails.name = it
+                            })
+                            SettingsTextFieldSample(label = "Email",value = userDetails.email, onTextChanged = {
+                                userDetails.email = it
+                            }, KeyboardType.Email)
+                            SettingsTextFieldSample(label = "Address",value = userDetails.address, onTextChanged = {
+                                userDetails.address = it
+                            })
+                            SettingsTextFieldSample(label = "Mobile",value = userDetails.mobile, onTextChanged = {
+                                userDetails.mobile = it
+                            }, KeyboardType.Phone)
+                            SettingsTextFieldSample(label = "Website",value = userDetails.website, onTextChanged = {
+                                userDetails.website = it
+                            })
+                        }
+                    } else {
+                        Column {
+                            Text("Name: ${userDetails.name}")
+                            Text("Email: ${userDetails.email}")
+                            Text("Address: ${userDetails.address}")
+                            Text("Mobile: ${userDetails.mobile}")
+                            Text("Website: ${userDetails.website}")
+                        }
+                    }
                 }
-            ) {
-                Text("Save")
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround){
+                    if (isEditable) {
+                        Button(
+                            onClick = {
+                                isEditable = false
+                                onSaveClicked(userDetails)
+                                onDismissRequest()
+                            }
+                        ) {
+                            Text("Save")
+                        }
+
+                    } else {
+                        Button(
+                            onClick = {
+                                isEditable = true
+                            }
+                        ) {
+                            Text("Edit")
+                        }
+                        Button(
+                            onClick = { onDismissRequest() }
+                        ) {
+                            Text("Close")
+                        }
+                    }
+                }
+
             }
-        },
-        text = {
-            Column {
-                SettingsTextFieldSample(label = "Name", onTextChanged = {
-                    userDetails.name = it
-                })
-                SettingsTextFieldSample(label = "Email", onTextChanged = {
-                                                                         userDetails.email = it
-                }, KeyboardType.Email)
-                SettingsTextFieldSample(label = "Address", onTextChanged = {
-                    userDetails.address = it
-                })
-                SettingsTextFieldSample(label = "Mobile", onTextChanged = {
-                                                                          userDetails.mobile = it
-                }, KeyboardType.Phone)
-                SettingsTextFieldSample(label = "Website", onTextChanged = {
-                    userDetails.website = it
-                })
-            }
-        },
-    )
+        }
+    }
+
 }
 
 @Composable
-fun SettingsTextFieldSample(label:String,onTextChanged:(String) -> Unit,keyboardType: KeyboardType = KeyboardType.Text) {
-    var value by remember{ mutableStateOf("") }
-    androidx.compose.material.TextField(value = value, onValueChange = {
-        onTextChanged(it)
-        value = it
-    },
-    modifier = Modifier.fillMaxWidth(.95f),
-    label = {Text(label,style = MaterialTheme.typography.titleSmall)},
-    colors = TextFieldDefaults.textFieldColors(
-        backgroundColor = White,
-        focusedIndicatorColor = MainColor
-    ))
+fun SettingsTextFieldSample(
+    label: String,
+    value:String = "",
+    onTextChanged: (String) -> Unit,
+    keyboardType: KeyboardType = KeyboardType.Text
+) {
+    var value by remember { mutableStateOf(value) }
+    androidx.compose.material.TextField(
+        value = value,
+        onValueChange = {
+            onTextChanged(it)
+            value = it
+        },
+        modifier = Modifier.fillMaxWidth(.95f),
+        label = { Text(label, style = MaterialTheme.typography.titleSmall) },
+        colors = TextFieldDefaults.textFieldColors(
+            backgroundColor = Color(0xFFEAE8F0),
+            focusedIndicatorColor = MainColor
+        ),
+    )
 }
 
 @Composable
 fun PrinterPopup(
-    selectedPrinter: String,
-    onPrinterSelected: (String) -> Unit,
+    pairedDevices: List<com.mycampus.billingapp.domain.bluetooth.BluetoothDevice>,
+    scannedDevices: List<com.mycampus.billingapp.domain.bluetooth.BluetoothDevice>,
+    onStartScan: () -> Unit,
+    onStopScan: () -> Unit,
     onDismissRequest: () -> Unit
 ) {
-    val availablePrinters = listOf("Printer A", "Printer B", "Printer C")
-
-    androidx.compose.material3.AlertDialog(
+    Dialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("Printer Connection") },
-        text = {
-/*
-            Column {
-                Text("Selected Printer: $selectedPrinter")
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Available Printers:")
-                Spacer(modifier = Modifier.height(8.dp))
-                Column {
-                    availablePrinters.forEach { printer ->
-                        Text(
-                            text = printer,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onPrinterSelected(printer) }
-                        )
-                        Divider(color = Color.Gray, thickness = 1.dp)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFEAE9F0))
+                    .padding(20.dp)
+            ) {
+                Text(
+                    "Printer Connection",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 22.sp,
+                    modifier = Modifier.padding(10.dp)
+                )
+                BluetoothDeviceList(
+                    pairedDevices = pairedDevices,
+                    scannedDevices = scannedDevices,
+                    onClick = {},
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    Button(onClick = onStartScan) {
+                        Text(text = "Start scan")
+                    }
+                    Button(onClick = onStopScan) {
+                        Text(text = "Stop scan")
                     }
                 }
             }
-*/
-               BluetoothScreen()
-        },
-        confirmButton = {
-            Button(
-                onClick = { onDismissRequest() }
-            ) {
-                Text("Close")
-            }
-        },
-    )
+        }
+    }
+}
+
+@SuppressLint("MissingPermission")
+@Composable
+fun BluetoothDeviceList(
+    pairedDevices: List<com.mycampus.billingapp.domain.bluetooth.BluetoothDevice>,
+    scannedDevices: List<com.mycampus.billingapp.domain.bluetooth.BluetoothDevice>,
+    onClick: (com.mycampus.billingapp.domain.bluetooth.BluetoothDevice) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier
+    ) {
+        item {
+            Text(
+                text = "Paired Devices",
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+        items(pairedDevices) { device ->
+            Text(
+                text = device.name ?: "(No name)",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onClick(device) },
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        item {
+            Text(
+                text = "Scanned Devices",
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+        items(scannedDevices) { device ->
+            Text(
+                text = device.name ?: "(No name)",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onClick(device) },
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
 }
 
 data class UserDetails(
@@ -993,9 +896,9 @@ data class UserDetails(
 fun getAmount(onAmountSet: (Double) -> Unit) {
     val value = remember { mutableStateOf(0.0) }
     TextField(
-        value = if(value.value == 0.0) "" else value.value.toString(), onValueChange = {
+        value = if (value.value == 0.0) "" else value.value.toString(), onValueChange = {
 
-            if (it.isEmpty()){
+            if (it.isEmpty()) {
                 value.value = 0.0
             } else {
                 value.value = when (it.toDoubleOrNull()) {
@@ -1014,14 +917,15 @@ fun getAmount(onAmountSet: (Double) -> Unit) {
         colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.White)
     )
 }
+
 @Composable
-fun SampleTextFieldDouble(label :String,text:Double,onAmountSet:(Double)-> Unit) {
-    val value = remember{ mutableStateOf(text) }
+fun SampleTextFieldDouble(label: String, text: Double, onAmountSet: (Double) -> Unit) {
+    val value = remember { mutableStateOf(text) }
     TextField(
-        value = if(value.value == 0.0) "" else value.value.toString(),
+        value = if (value.value == 0.0) "" else value.value.toString(),
         modifier = Modifier.fillMaxWidth(),
         onValueChange = {
-            if (it.isEmpty()){
+            if (it.isEmpty()) {
                 value.value = 0.0
             } else {
                 value.value = when (it.toDoubleOrNull()) {
@@ -1033,7 +937,7 @@ fun SampleTextFieldDouble(label :String,text:Double,onAmountSet:(Double)-> Unit)
         },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        label ={androidx.compose.material.Text(label)},
+        label = { androidx.compose.material.Text(label) },
         colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.White)
     )
 }
