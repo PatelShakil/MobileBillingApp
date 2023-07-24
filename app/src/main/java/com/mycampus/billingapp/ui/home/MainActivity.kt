@@ -28,12 +28,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -48,8 +51,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Black
+import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,6 +65,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.mycampus.billingapp.R
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.domain.bluetooth.BluetoothDevice
 import com.mycampus.billingapp.ui.theme.BiilingappTheme
@@ -127,6 +134,7 @@ class MainActivity : ComponentActivity() {
                             }
                             viewModel.startScan()
                         }, onStopScan = viewModel::stopScan)
+                        Spacer(modifier = Modifier.height(10.dp))
                         MainScreenFees(
                             onProceedClicked = {},
                             navController = NavController(LocalContext.current)
@@ -175,7 +183,8 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()
-            .padding(start = 10.dp, end = 10.dp, top = 10.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(start = 10.dp, end = 10.dp, top = 10.dp,bottom = 30.dp),
         border = BorderStroke(.5.dp, Color.Gray),
         elevation = CardDefaults.cardElevation(18.dp)
     ) {
@@ -568,7 +577,7 @@ fun HeaderLayout(state: BluetoothUiState,viewModel:UserViewModel, onStartScan: (
     var userDetails = viewModel.getUserDetails()
 
 
-    Column {
+    Column (modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally){
         TopAppBar(
             title = {
                 Row(
@@ -629,7 +638,9 @@ fun HeaderLayout(state: BluetoothUiState,viewModel:UserViewModel, onStartScan: (
             backgroundColor = MainColor,
             elevation = 0.dp
         )
-        HeaderScreen(userDetails)
+        HeaderScreen(userDetails){
+            isSettingsExpanded = true
+        }
     }
 
 
@@ -655,14 +666,68 @@ fun HeaderLayout(state: BluetoothUiState,viewModel:UserViewModel, onStartScan: (
 }
 
 @Composable
-fun HeaderScreen(userDetails: UserDetails?) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+fun HeaderScreen(userDetails: UserDetails?,onSetUserDetails: ()-> Unit) {
+    Card(modifier = Modifier
+        .fillMaxWidth(.95f)
+        .padding(top = 10.dp),
+    border = BorderStroke(.5.dp, Black),
+        elevation = CardDefaults.cardElevation(18.dp)
+    ) {
+        Column(modifier = Modifier
+            .fillMaxWidth()
+            .background(White),
+        horizontalAlignment = Alignment.CenterHorizontally) {
+            if(userDetails == null || userDetails == UserDetails()){
+                Button(onClick = onSetUserDetails,
+                modifier = Modifier.padding(vertical = 10.dp)){
+                    Text("Add Details")
+                }
+            }else{
+                Column(modifier = Modifier.fillMaxWidth(.95f)) {
+                    Text(
+                        userDetails.name,
+                        modifier = Modifier.padding(start = 20.dp),
+                        fontSize = 20.sp
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Call,"",
+                            tint = MainColor
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            userDetails.mobile + " | " + userDetails.email,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(painter = painterResource(R.drawable.ic_address),
+                        "",
+                        tint = MainColor)
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            userDetails.address,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(painter = painterResource(R.drawable.ic_web),"",
+                        tint = MainColor)
+                        Spacer(Modifier.width(5.dp))
+                        Text(
+                            userDetails.website,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Blue
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+        }
 
     }
 
-    if(userDetails == null){
 
-    }
 }
 
 @Composable
@@ -737,7 +802,7 @@ fun SettingsPopup(
                         }
                     }
                     else {
-                        if(userDetails != null) {
+                        if(userDetails != UserDetails()) {
                             Column {
                                 Text("Name: ${userDetails.name}")
                                 Text("Email: ${userDetails.email}")
@@ -770,7 +835,7 @@ fun SettingsPopup(
                                 isEditable = true
                             }
                         ) {
-                            Text("Edit")
+                            Text(if(userDetails == UserDetails()) "Add" else "Edit")
                         }
                         Button(
                             onClick = { onDismissRequest() }
@@ -922,7 +987,10 @@ fun BluetoothDeviceList(
 
 @Composable
 fun BTDeviceItem(device:BluetoothDevice,onClick:(BluetoothDevice)->Unit) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp).clickable { onClick(device)}){
+    Card(modifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = 5.dp)
+        .clickable { onClick(device) }){
         Text(
             text = device.name ?: "(No name)",
             modifier = Modifier
