@@ -59,8 +59,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.mycampus.billingapp.data.models.UserDetails
+import com.mycampus.billingapp.domain.bluetooth.BluetoothDevice
 import com.mycampus.billingapp.ui.theme.BiilingappTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.math.roundToInt
 
 @AndroidEntryPoint
@@ -109,13 +112,14 @@ class MainActivity : ComponentActivity() {
             BiilingappTheme {
                 // A surface container using the 'background' color from the theme
                 val viewModel = hiltViewModel<BluetoothViewModel>()
+                val userViewModel = hiltViewModel<UserViewModel>()
                 val state by viewModel.state.collectAsState()
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        HeaderLayout(state, onStartScan = {
+                        HeaderLayout(state,userViewModel, onStartScan = {
                             if (!isBluetoothEnabled) {
                                 enableBluetoothLauncher.launch(
                                     Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
@@ -283,7 +287,7 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                             )
                             Box(modifier = Modifier.weight(.3f)) {
                                 getAmount(onAmountSet = {
-                                    amount.value = it
+                                    amount.value = it.toDouble()
 
                                 })
                             }
@@ -299,18 +303,15 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                 }
                 Spacer(modifier = Modifier.height(3.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth(.95f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Text(
-                        "Discount",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Black,
-                        modifier = Modifier.padding(start = 10.dp, end = 20.dp)
-                    )
-                    SampleTextFieldDouble(label = "Discount", text = 0.0, onAmountSet = {
-                        discountAmount = it
-                    })
+                    Spacer(modifier = Modifier.weight(.7f))
+                    SampleTextFieldDouble(label = "Discount", text = 0, onAmountSet = {
+                        discountAmount = it.toDouble()
+                    },
+                    modifier = Modifier.weight(.3f))
                 }
                 Divider(
                     modifier = Modifier
@@ -560,93 +561,85 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
 
 
 @Composable
-fun HeaderLayout(state: BluetoothUiState, onStartScan: () -> Unit, onStopScan: () -> Unit) {
+fun HeaderLayout(state: BluetoothUiState,viewModel:UserViewModel, onStartScan: () -> Unit, onStopScan: () -> Unit) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
     var isPrinterExpanded by remember { mutableStateOf(false) }
+    var userDetails = viewModel.getUserDetails()
 
-    // Replace with your desired user details
-    val userDetails = remember {
-        mutableStateOf(
-            UserDetails(
-                "John Doe",
-                "johndoe@example.com",
-                "123 Main St",
-                "555-123-4567",
-                "www.example.com"
-            )
-        )
-    }
 
-    TopAppBar(
-        title = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Mobile Billing",
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Column(horizontalAlignment = Alignment.End) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = "Menu Icon",
-                        tint = White,
-                        modifier = Modifier.clickable { isMenuExpanded = !isMenuExpanded }
+    Column {
+        TopAppBar(
+            title = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Mobile Billing",
+                        fontWeight = FontWeight.Bold,
+                        color = White
                     )
-                    DropdownMenu(
-                        expanded = isMenuExpanded,
-                        onDismissRequest = { isMenuExpanded = false },
-                    ) {
-                        DropdownMenuItem(
-                            onClick = {
-                                isMenuExpanded = false
-                                // Handle Settings menu item click
-                                isSettingsExpanded = true
-                            }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Menu Icon",
+                            tint = White,
+                            modifier = Modifier.clickable { isMenuExpanded = !isMenuExpanded }
+                        )
+                        DropdownMenu(
+                            expanded = isMenuExpanded,
+                            onDismissRequest = { isMenuExpanded = false },
                         ) {
-                            Text("Settings")
-                        }
-                        DropdownMenuItem(
-                            onClick = {
-                                isMenuExpanded = false
-                                // Handle Printer Connection menu item click
-                                isPrinterExpanded = true
+                            DropdownMenuItem(
+                                onClick = {
+                                    isMenuExpanded = false
+                                    // Handle Settings menu item click
+                                    isSettingsExpanded = true
+                                }
+                            ) {
+                                Text("Settings")
                             }
-                        ) {
-                            Text("Printer Connection")
-                        }
-                        DropdownMenuItem(
-                            onClick = {
-                                isMenuExpanded = false
-                                // Handle Others menu item click
+                            DropdownMenuItem(
+                                onClick = {
+                                    isMenuExpanded = false
+                                    // Handle Printer Connection menu item click
+                                    isPrinterExpanded = true
+                                }
+                            ) {
+                                Text("Printer Connection")
                             }
-                        ) {
-                            Text("Others")
+                            DropdownMenuItem(
+                                onClick = {
+                                    isMenuExpanded = false
+                                    // Handle Others menu item click
+                                }
+                            ) {
+                                Text("Others")
+                            }
                         }
                     }
+
                 }
 
-            }
-
-        },
-        backgroundColor = MainColor,
-        elevation = 0.dp
-    )
+            },
+            backgroundColor = MainColor,
+            elevation = 0.dp
+        )
+        HeaderScreen(userDetails)
+    }
 
 
 
     if (isSettingsExpanded) {
         SettingsPopup(
-            userDetails.value,
+            userDetails ?: UserDetails(),
             onDismissRequest = { isSettingsExpanded = false },
             onSaveClicked = {
-                Log.d("UserDetails", it.toString())
+                viewModel.saveUserDetails(it)
             }
         )
     }
@@ -662,12 +655,22 @@ fun HeaderLayout(state: BluetoothUiState, onStartScan: () -> Unit, onStopScan: (
 }
 
 @Composable
+fun HeaderScreen(userDetails: UserDetails?) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+
+    }
+
+    if(userDetails == null){
+
+    }
+}
+
+@Composable
 fun SettingsPopup(
     userDetails: UserDetails,
     onDismissRequest: () -> Unit,
     onSaveClicked: (UserDetails) -> Unit
 ) {
-    val context = LocalContext.current
     var isEditable by remember { mutableStateOf(false) }
     Dialog(
         onDismissRequest = onDismissRequest,
@@ -697,34 +700,59 @@ fun SettingsPopup(
                 Column() {
                     if (isEditable) {
                         Column {
-                            SettingsTextFieldSample(label = "Name",value = userDetails.name, onTextChanged = {
-                                userDetails.name = it
-                            })
-                            SettingsTextFieldSample(label = "Email",value = userDetails.email, onTextChanged = {
-                                userDetails.email = it
-                            }, KeyboardType.Email)
-                            SettingsTextFieldSample(label = "Address",value = userDetails.address, onTextChanged = {
-                                userDetails.address = it
-                            })
-                            SettingsTextFieldSample(label = "Mobile",value = userDetails.mobile, onTextChanged = {
-                                userDetails.mobile = it
-                            }, KeyboardType.Phone)
-                            SettingsTextFieldSample(label = "Website",value = userDetails.website, onTextChanged = {
-                                userDetails.website = it
-                            })
+                            SettingsTextFieldSample(
+                                label = "Name",
+                                value = userDetails.name,
+                                onTextChanged = {
+                                    userDetails.name = it
+                                })
+                            SettingsTextFieldSample(
+                                label = "Email",
+                                value = userDetails.email,
+                                onTextChanged = {
+                                    userDetails.email = it
+                                },
+                                KeyboardType.Email
+                            )
+                            SettingsTextFieldSample(
+                                label = "Address",
+                                value = userDetails.address,
+                                onTextChanged = {
+                                    userDetails.address = it
+                                })
+                            SettingsTextFieldSample(
+                                label = "Mobile",
+                                value = userDetails.mobile,
+                                onTextChanged = {
+                                    userDetails.mobile = it
+                                },
+                                KeyboardType.Phone
+                            )
+                            SettingsTextFieldSample(
+                                label = "Website",
+                                value = userDetails.website,
+                                onTextChanged = {
+                                    userDetails.website = it
+                                })
                         }
-                    } else {
-                        Column {
-                            Text("Name: ${userDetails.name}")
-                            Text("Email: ${userDetails.email}")
-                            Text("Address: ${userDetails.address}")
-                            Text("Mobile: ${userDetails.mobile}")
-                            Text("Website: ${userDetails.website}")
+                    }
+                    else {
+                        if(userDetails != null) {
+                            Column {
+                                Text("Name: ${userDetails.name}")
+                                Text("Email: ${userDetails.email}")
+                                Text("Address: ${userDetails.address}")
+                                Text("Mobile: ${userDetails.mobile}")
+                                Text("Website: ${userDetails.website}")
+                            }
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(10.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround){
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
                     if (isEditable) {
                         Button(
                             onClick = {
@@ -761,7 +789,7 @@ fun SettingsPopup(
 @Composable
 fun SettingsTextFieldSample(
     label: String,
-    value:String = "",
+    value: String = "",
     onTextChanged: (String) -> Unit,
     keyboardType: KeyboardType = KeyboardType.Text
 ) {
@@ -778,6 +806,7 @@ fun SettingsTextFieldSample(
             backgroundColor = Color(0xFFEAE8F0),
             focusedIndicatorColor = MainColor
         ),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
     )
 }
 
@@ -789,6 +818,8 @@ fun PrinterPopup(
     onStopScan: () -> Unit,
     onDismissRequest: () -> Unit
 ) {
+    var isStart by remember { mutableStateOf(false) }
+    var isStop by remember { mutableStateOf(true) }
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(
@@ -804,6 +835,7 @@ fun PrinterPopup(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .wrapContentHeight()
                     .background(Color(0xFFEAE9F0))
                     .padding(20.dp)
             ) {
@@ -811,22 +843,38 @@ fun PrinterPopup(
                     "Printer Connection",
                     style = MaterialTheme.typography.titleMedium,
                     fontSize = 22.sp,
-                    modifier = Modifier.padding(10.dp)
                 )
                 BluetoothDeviceList(
                     pairedDevices = pairedDevices,
                     scannedDevices = scannedDevices,
                     onClick = {},
+                    modifier = Modifier.weight(.8f)
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp)
+                        .weight(.06f),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    Button(onClick = onStartScan) {
-                        Text(text = "Start scan")
+                    if (isStop) {
+                        Button(onClick = {
+                            onStartScan()
+                            isStart = true
+                            isStop = false
+                        }) {
+                            Text(text = "Start scan")
+
+                        }
                     }
-                    Button(onClick = onStopScan) {
-                        Text(text = "Stop scan")
+                    if (isStart) {
+                        Button(onClick = {
+                            onStopScan()
+                            isStart = false
+                            isStop = true
+                        }) {
+                            Text(text = "Stop scan")
+                        }
                     }
                 }
             }
@@ -843,24 +891,19 @@ fun BluetoothDeviceList(
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        modifier = modifier
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
             Text(
                 text = "Paired Devices",
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(8.dp)
             )
         }
         items(pairedDevices) { device ->
-            Text(
-                text = device.name ?: "(No name)",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onClick(device) },
-                style = MaterialTheme.typography.bodySmall
-            )
+            BTDeviceItem(device = device, onClick = onClick)
         }
 
         item {
@@ -868,45 +911,43 @@ fun BluetoothDeviceList(
                 text = "Scanned Devices",
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(8.dp)
             )
         }
         items(scannedDevices) { device ->
-            Text(
-                text = device.name ?: "(No name)",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onClick(device) },
-                style = MaterialTheme.typography.bodySmall
-            )
+            BTDeviceItem(device = device, onClick = onClick)
         }
     }
 }
 
-data class UserDetails(
-    var name: String,
-    var email: String,
-    var address: String,
-    var mobile: String,
-    var website: String
-)
+@Composable
+fun BTDeviceItem(device:BluetoothDevice,onClick:(BluetoothDevice)->Unit) {
+    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp).clickable { onClick(device)}){
+        Text(
+            text = device.name ?: "(No name)",
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 7.dp, horizontal = 5.dp)
+                .padding(start = 10.dp),
+            style = MaterialTheme.typography.titleSmall
+        )
+    }
 
+}
 
 @Composable
-fun getAmount(onAmountSet: (Double) -> Unit) {
-    val value = remember { mutableStateOf(0.0) }
+fun getAmount(onAmountSet: (Int) -> Unit) {
+    var value by remember { mutableStateOf(0) }
     TextField(
-        value = if (value.value == 0.0) "" else value.value.toString(), onValueChange = {
-
+        value = if (value == 0) "" else value.toString(),
+        onValueChange = {
             if (it.isEmpty()) {
-                value.value = 0.0
+                value = 0
+                onAmountSet(value)
             } else {
-                value.value = when (it.toDoubleOrNull()) {
-                    null -> value.value //old value
-                    else -> it.toDouble()   //new value
-                }
+                value = it.toInt()
+                onAmountSet(value)
             }
-            onAmountSet(value.value)
         },
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Number,
@@ -919,25 +960,23 @@ fun getAmount(onAmountSet: (Double) -> Unit) {
 }
 
 @Composable
-fun SampleTextFieldDouble(label: String, text: Double, onAmountSet: (Double) -> Unit) {
-    val value = remember { mutableStateOf(text) }
+fun SampleTextFieldDouble(modifier : Modifier = Modifier,label: String, text: Int, onAmountSet: (Int) -> Unit) {
+    var value by remember { mutableStateOf(text) }
     TextField(
-        value = if (value.value == 0.0) "" else value.value.toString(),
-        modifier = Modifier.fillMaxWidth(),
+        value = if (value == 0) "" else value.toString(),
+        modifier = modifier,
         onValueChange = {
             if (it.isEmpty()) {
-                value.value = 0.0
+                value = 0
+                onAmountSet(value)
             } else {
-                value.value = when (it.toDoubleOrNull()) {
-                    null -> value.value //old value
-                    else -> it.toDouble()   //new value
-                }
+                value = it.toInt()
+                onAmountSet(value)
             }
-            onAmountSet(value.value)
         },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        label = { androidx.compose.material.Text(label) },
+        label = { Text(label,style = MaterialTheme.typography.bodySmall) },
         colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.White)
     )
 }
