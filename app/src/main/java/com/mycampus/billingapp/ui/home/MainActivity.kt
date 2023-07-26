@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,7 +37,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -55,22 +55,21 @@ import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.mycampus.billingapp.R
+import com.mycampus.billingapp.data.models.Item
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.domain.bluetooth.BluetoothDevice
 import com.mycampus.billingapp.ui.theme.BiilingappTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.math.roundToInt
 
 @AndroidEntryPoint
@@ -126,11 +125,12 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        HeaderLayout(state,userViewModel, onStartScan = {
+                        HeaderLayout(state, userViewModel, onStartScan = {
                             if (!isBluetoothEnabled) {
                                 enableBluetoothLauncher.launch(
                                     Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
                                 )
+                                viewModel.startScan()
                             }
                             viewModel.startScan()
                         }, onStopScan = viewModel::stopScan)
@@ -139,6 +139,8 @@ class MainActivity : ComponentActivity() {
                             onProceedClicked = {},
                             navController = NavController(LocalContext.current)
                         )
+                        Spacer(Modifier.height(20.dp))
+
                     }
 
                 }
@@ -184,7 +186,7 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
             .fillMaxWidth()
             .wrapContentHeight()
             .verticalScroll(rememberScrollState())
-            .padding(start = 10.dp, end = 10.dp, top = 10.dp,bottom = 30.dp),
+            .padding(start = 10.dp, end = 10.dp, top = 10.dp, bottom = 30.dp),
         border = BorderStroke(.5.dp, Color.Gray),
         elevation = CardDefaults.cardElevation(18.dp)
     ) {
@@ -237,6 +239,7 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
             )
             Spacer(modifier = Modifier.height(5.dp))
             var discountAmount by remember { mutableStateOf(0.0) }
+            var taxPer by remember { mutableStateOf(0.0) }
             var totalAmount = 0.0
 
             Box(modifier = Modifier.fillMaxWidth(.94f), contentAlignment = Alignment.Center) {
@@ -256,6 +259,7 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                     .fillMaxWidth()
                     .height(1.dp)
             )
+            val itemsList = ArrayList<Item>()
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -266,10 +270,11 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
+                        val item by remember{mutableStateOf(Item(it + 1,"",0.0))}
                         val amount = remember {
                             mutableStateOf(0.0)
                         }
-                        val item = remember { mutableStateOf("") }
+                        val itemName = remember { mutableStateOf("") }
                         Row(
                             modifier = Modifier.fillMaxWidth(.95f),
                             verticalAlignment = Alignment.CenterVertically
@@ -281,7 +286,8 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
 //                         })
                             Text(text = "${it + 1}.", modifier = Modifier.weight(.08f))
                             TextField(
-                                value = item.value, onValueChange = { item.value = it },
+                                value = itemName.value, onValueChange = { itemName.value = it
+                                                                        item.itemName = it},
                                 modifier = Modifier.weight(.62f),
                                 placeholder = {
                                     Text(
@@ -297,10 +303,12 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                             Box(modifier = Modifier.weight(.3f)) {
                                 getAmount(onAmountSet = {
                                     amount.value = it.toDouble()
+                                    item.amount = it.toDouble()
 
                                 })
                             }
                             totalAmount += amount.value
+                            itemsList.add(item)
                         }
 //                        listOfFinalData.add(OtherItemsInfo( amount.value, item.value))
                     }
@@ -314,13 +322,21 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                 Row(
                     modifier = Modifier.fillMaxWidth(.95f),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End
                 ) {
-                    Spacer(modifier = Modifier.weight(.7f))
-                    SampleTextFieldDouble(label = "Discount", text = 0, onAmountSet = {
-                        discountAmount = it.toDouble()
+                    Spacer(modifier = Modifier.weight(.4f))
+                    SampleTextFieldDouble(
+                        label = "Tax", text = 0, onAmountSet = {
+                            taxPer = it.toDouble()
                     },
-                    modifier = Modifier.weight(.3f))
+                        modifier = Modifier.weight(.3f)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    SampleTextFieldDouble(
+                        label = "Discount", text = 0, onAmountSet = {
+                            discountAmount = it.toDouble()
+                        },
+                        modifier = Modifier.weight(.3f)
+                    )
                 }
                 Divider(
                     modifier = Modifier
@@ -491,7 +507,8 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
 //                        && listOfFinalData.isNotEmpty()
             ) {
                 Text(
-                    "Pay Rs ${if (totalAmount > 0) totalAmount - discountAmount else totalAmount}",
+                    "Pay Rs ${if (totalAmount > 0) (totalAmount * (1 + taxPer / 100)).roundToInt()
+                            - discountAmount else (totalAmount * (1 + taxPer / 100)).roundToInt()}",
                     color = Color.White,
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier
@@ -514,12 +531,28 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                         )
                     },
                     text = {
-                        Row {
+                        Column {
                             val INR = "₹"
                             androidx.compose.material3.Text(
-                                text = "Total  Amount  - $INR ${totalAmount} \n" +
-                                        "Discount Amount - $INR ${discountAmount}  \n" +
-                                        "Going to Pay    - $INR ${totalAmount - discountAmount.roundToInt()}  \n" +
+                                text = "Total  Amount  : $INR ${totalAmount} \n" +
+                                        "Tax Amount : $INR ${(totalAmount * (1 + taxPer / 100)).roundToInt() - totalAmount}" ,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Row {
+                                Text(
+                                    text = "Discount Amount : ",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "$INR -${discountAmount}",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MainColor
+                                )
+                            }
+                            Text(
+                                text = "Going to Pay    : $INR ${(totalAmount * (1 + taxPer / 100)).roundToInt() - discountAmount.roundToInt()}  \n" +
                                         //"Balance Amount  - $INR ${0.0}",
                                         "Payment Mode - ${transactionRemark} ",
                                 style = MaterialTheme.typography.titleSmall,
@@ -529,6 +562,7 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                     },
                     confirmButton = {
                         Button(onClick = {
+                            Log.d("Items List",itemsList.toString())
                             //Call API here
                             /*if(isOnileModeChecked.value)
                                 viewModel.feePayInfo.value.paymode=2
@@ -570,14 +604,19 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
 
 
 @Composable
-fun HeaderLayout(state: BluetoothUiState,viewModel:UserViewModel, onStartScan: () -> Unit, onStopScan: () -> Unit) {
+fun HeaderLayout(
+    state: BluetoothUiState,
+    viewModel: UserViewModel,
+    onStartScan: () -> Unit,
+    onStopScan: () -> Unit
+) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
     var isPrinterExpanded by remember { mutableStateOf(false) }
     var userDetails = viewModel.getUserDetails()
 
 
-    Column (modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally){
+    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         TopAppBar(
             title = {
                 Row(
@@ -638,7 +677,7 @@ fun HeaderLayout(state: BluetoothUiState,viewModel:UserViewModel, onStartScan: (
             backgroundColor = MainColor,
             elevation = 0.dp
         )
-        HeaderScreen(userDetails){
+        HeaderScreen(userDetails) {
             isSettingsExpanded = true
         }
     }
@@ -666,34 +705,38 @@ fun HeaderLayout(state: BluetoothUiState,viewModel:UserViewModel, onStartScan: (
 }
 
 @Composable
-fun HeaderScreen(userDetails: UserDetails?,onSetUserDetails: ()-> Unit) {
-    Card(modifier = Modifier
-        .fillMaxWidth(.95f)
-        .padding(top = 10.dp),
-    border = BorderStroke(.5.dp, Black),
+fun HeaderScreen(userDetails: UserDetails?, onSetUserDetails: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(.95f)
+            .padding(top = 10.dp),
+        border = BorderStroke(.5.dp, Black),
         elevation = CardDefaults.cardElevation(18.dp)
     ) {
-        Column(modifier = Modifier
-            .fillMaxWidth()
-            .background(White),
-        horizontalAlignment = Alignment.CenterHorizontally) {
-            if(userDetails == null || userDetails == UserDetails()){
-                Button(onClick = onSetUserDetails,
-                modifier = Modifier.padding(vertical = 10.dp)){
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(White),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (userDetails == null || userDetails == UserDetails()) {
+                Button(
+                    onClick = onSetUserDetails,
+                    modifier = Modifier.padding(vertical = 10.dp)
+                ) {
                     Text("Add Details")
                 }
-            }else{
-                Column(modifier = Modifier.fillMaxWidth(.95f)) {
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth(.95f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
                         userDetails.name,
-                        modifier = Modifier.padding(start = 20.dp),
+                        modifier = Modifier.padding(start = 0.dp),
                         fontSize = 20.sp
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Call,"",
-                            tint = MainColor
-                        )
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             userDetails.mobile + " | " + userDetails.email,
@@ -701,9 +744,6 @@ fun HeaderScreen(userDetails: UserDetails?,onSetUserDetails: ()-> Unit) {
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painter = painterResource(R.drawable.ic_address),
-                        "",
-                        tint = MainColor)
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             userDetails.address,
@@ -711,8 +751,13 @@ fun HeaderScreen(userDetails: UserDetails?,onSetUserDetails: ()-> Unit) {
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painter = painterResource(R.drawable.ic_web),"",
-                        tint = MainColor)
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            userDetails.GST,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Spacer(Modifier.width(5.dp))
                         Text(
                             userDetails.website,
@@ -784,7 +829,9 @@ fun SettingsPopup(
                                 value = userDetails.address,
                                 onTextChanged = {
                                     userDetails.address = it
-                                })
+                                },
+                                lineCount = 3
+                            )
                             SettingsTextFieldSample(
                                 label = "Mobile",
                                 value = userDetails.mobile,
@@ -794,20 +841,27 @@ fun SettingsPopup(
                                 KeyboardType.Phone
                             )
                             SettingsTextFieldSample(
+                                label = "GST No.",
+                                value = userDetails.GST,
+                                onTextChanged = {
+                                    userDetails.GST = it
+                                }
+                            )
+                            SettingsTextFieldSample(
                                 label = "Website",
                                 value = userDetails.website,
                                 onTextChanged = {
                                     userDetails.website = it
                                 })
                         }
-                    }
-                    else {
-                        if(userDetails != UserDetails()) {
+                    } else {
+                        if (userDetails != UserDetails()) {
                             Column {
                                 Text("Name: ${userDetails.name}")
                                 Text("Email: ${userDetails.email}")
                                 Text("Address: ${userDetails.address}")
                                 Text("Mobile: ${userDetails.mobile}")
+                                Text("GST No: ${userDetails.GST}")
                                 Text("Website: ${userDetails.website}")
                             }
                         }
@@ -835,7 +889,7 @@ fun SettingsPopup(
                                 isEditable = true
                             }
                         ) {
-                            Text(if(userDetails == UserDetails()) "Add" else "Edit")
+                            Text(if (userDetails == UserDetails()) "Add" else "Edit")
                         }
                         Button(
                             onClick = { onDismissRequest() }
@@ -856,7 +910,8 @@ fun SettingsTextFieldSample(
     label: String,
     value: String = "",
     onTextChanged: (String) -> Unit,
-    keyboardType: KeyboardType = KeyboardType.Text
+    keyboardType: KeyboardType = KeyboardType.Text,
+    lineCount: Int = 1
 ) {
     var value by remember { mutableStateOf(value) }
     androidx.compose.material.TextField(
@@ -871,6 +926,8 @@ fun SettingsTextFieldSample(
             backgroundColor = Color(0xFFEAE8F0),
             focusedIndicatorColor = MainColor
         ),
+        minLines = lineCount,
+        singleLine = lineCount <= 1,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
     )
 }
@@ -909,17 +966,23 @@ fun PrinterPopup(
                     style = MaterialTheme.typography.titleMedium,
                     fontSize = 22.sp,
                 )
-                BluetoothDeviceList(
-                    pairedDevices = pairedDevices,
-                    scannedDevices = scannedDevices,
-                    onClick = {},
-                    modifier = Modifier.weight(.8f)
-                )
+                if (pairedDevices.isNotEmpty() && scannedDevices.isNotEmpty()) {
+                    BluetoothDeviceList(
+                        pairedDevices = pairedDevices,
+                        scannedDevices = scannedDevices,
+                        onClick = {},
+                        modifier = Modifier
+                            .padding(vertical = 20.dp)
+                            .fillMaxHeight(.7f)
+                    )
+                }else {
+                    //TODO//handle devices if no device detected | make call OnAPIFailed() composable
+                    Text("no device found", textAlign = TextAlign.Center)
+                }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 10.dp)
-                        .weight(.06f),
+                        .padding(top = 10.dp),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
                     if (isStop) {
@@ -956,7 +1019,7 @@ fun BluetoothDeviceList(
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        modifier = modifier,
+        modifier = modifier.wrapContentHeight(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
@@ -986,11 +1049,11 @@ fun BluetoothDeviceList(
 }
 
 @Composable
-fun BTDeviceItem(device:BluetoothDevice,onClick:(BluetoothDevice)->Unit) {
+fun BTDeviceItem(device: BluetoothDevice, onClick: (BluetoothDevice) -> Unit) {
     Card(modifier = Modifier
         .fillMaxWidth()
         .padding(vertical = 5.dp)
-        .clickable { onClick(device) }){
+        .clickable { onClick(device) }) {
         Text(
             text = device.name ?: "(No name)",
             modifier = Modifier
@@ -1028,7 +1091,12 @@ fun getAmount(onAmountSet: (Int) -> Unit) {
 }
 
 @Composable
-fun SampleTextFieldDouble(modifier : Modifier = Modifier,label: String, text: Int, onAmountSet: (Int) -> Unit) {
+fun SampleTextFieldDouble(
+    modifier: Modifier = Modifier,
+    label: String,
+    text: Int,
+    onAmountSet: (Int) -> Unit
+) {
     var value by remember { mutableStateOf(text) }
     TextField(
         value = if (value == 0) "" else value.toString(),
@@ -1044,7 +1112,7 @@ fun SampleTextFieldDouble(modifier : Modifier = Modifier,label: String, text: In
         },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        label = { Text(label,style = MaterialTheme.typography.bodySmall) },
+        label = { Text(label, style = MaterialTheme.typography.bodySmall) },
         colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.White)
     )
 }

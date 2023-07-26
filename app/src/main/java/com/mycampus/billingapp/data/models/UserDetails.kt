@@ -5,5 +5,6 @@ data class UserDetails(
     var email: String = "",
     var address: String = "",
     var mobile: String = "",
+    var GST: String = "",
     var website: String = ""
 )
