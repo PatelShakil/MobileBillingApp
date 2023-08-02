@@ -1,5 +1,8 @@
 package com.mycampus.billingapp.data.models
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
 data class UserDetails(
     var name: String = "",
     var email: String = "",

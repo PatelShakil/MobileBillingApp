@@ -2,8 +2,12 @@ package com.mycampus.billingapp.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.room.Room
 import com.mycampus.billingapp.data.bluetooth.AndroidBluetoothController
+import com.mycampus.billingapp.data.repo.BillRepository
 import com.mycampus.billingapp.data.repo.UserRepository
+import com.mycampus.billingapp.data.room.AppDatabase
+import com.mycampus.billingapp.data.room.RoomDao
 import com.mycampus.billingapp.domain.bluetooth.BluetoothController
 import dagger.Module
 import dagger.Provides
@@ -25,10 +29,27 @@ object AppModule {
     fun provideUserRepository(sharedPreferences: SharedPreferences): UserRepository {
         return UserRepository(sharedPreferences)
     }
+    @Provides
+    fun provideBillRepository(billingDao:RoomDao): BillRepository {
+        return BillRepository(billingDao)
+    }
 
     @Provides
     @Singleton
     fun provideBluetoothController(@ApplicationContext context: Context): BluetoothController {
         return AndroidBluetoothController(context)
     }
+
+    @Provides
+    @Singleton
+    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(context, AppDatabase::class.java, "billingapp_database")
+            .build()
+    }
+
+    @Provides
+    fun provideRoomDao(appDatabase: AppDatabase): RoomDao {
+        return appDatabase.billingDao()
+    }
+
 }

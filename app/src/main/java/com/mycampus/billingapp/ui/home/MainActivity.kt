@@ -64,9 +64,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
-import com.mycampus.billingapp.data.models.Item
+import com.mycampus.billingapp.data.room.entities.BillItem
+import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.models.UserDetails
+import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.domain.bluetooth.BluetoothDevice
 import com.mycampus.billingapp.ui.theme.BiilingappTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -120,6 +123,10 @@ class MainActivity : ComponentActivity() {
                 val viewModel = hiltViewModel<BluetoothViewModel>()
                 val userViewModel = hiltViewModel<UserViewModel>()
                 val state by viewModel.state.collectAsState()
+                var itemCol by remember{ mutableStateOf(listOf<BillItemCollectionWithBillItems>()) }
+                userViewModel.allItemCollections.observeForever {
+                    itemCol = it
+                }
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -135,10 +142,32 @@ class MainActivity : ComponentActivity() {
                             viewModel.startScan()
                         }, onStopScan = viewModel::stopScan)
                         Spacer(modifier = Modifier.height(10.dp))
+
+
+
+
                         MainScreenFees(
+                            userViewModel.getUserDetails() ?: UserDetails(),
                             onProceedClicked = {},
                             navController = NavController(LocalContext.current)
-                        )
+                        ){billCol,list ->
+                            Log.d("billCol",billCol.toString())
+                            Log.d("BillItemList",list.toString())
+                            userViewModel.addItemCollection(billCol,list)
+                        }
+
+                        if(itemCol.isNotEmpty()) {
+                            LazyColumn(modifier = Modifier.fillMaxWidth(.95f),
+                            horizontalAlignment = Alignment.CenterHorizontally) {
+                                items(itemCol){
+                                    Text("Collection ID " + it.itemCollection.id.toString())
+                                    it.itemList.forEach { 
+                                        Text(text = it.item_name, style = MaterialTheme.typography.titleSmall)
+                                    }
+                                }
+                            }
+                        }
+
                         Spacer(Modifier.height(20.dp))
 
                     }
@@ -158,7 +187,7 @@ data class CollectFeeData(
 )
 
 @Composable
-fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navController: NavController) {
+fun MainScreenFees(userDetails : UserDetails,onProceedClicked: (List<CollectFeeData>) -> Unit, navController: NavController,onFeePaid:(BillItemCollection,List<BillItem>)-> Unit) {
     val context = LocalContext.current
 //    var studentName = viewModel.studentName.collectAsState()
 //    var className = viewModel.className.collectAsState()
@@ -259,7 +288,7 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                     .fillMaxWidth()
                     .height(1.dp)
             )
-            val itemsList = ArrayList<Item>()
+            val itemsList = ArrayList<BillItem>()
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -270,7 +299,7 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        val item by remember{mutableStateOf(Item(it + 1,"",0.0))}
+                        val item by remember{mutableStateOf(BillItem(0,0,"",0.0,System.currentTimeMillis(),userDetails.name))}
                         val amount = remember {
                             mutableStateOf(0.0)
                         }
@@ -287,7 +316,7 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                             Text(text = "${it + 1}.", modifier = Modifier.weight(.08f))
                             TextField(
                                 value = itemName.value, onValueChange = { itemName.value = it
-                                                                        item.itemName = it},
+                                                                        item.item_name = it},
                                 modifier = Modifier.weight(.62f),
                                 placeholder = {
                                     Text(
@@ -303,7 +332,7 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                             Box(modifier = Modifier.weight(.3f)) {
                                 getAmount(onAmountSet = {
                                     amount.value = it.toDouble()
-                                    item.amount = it.toDouble()
+                                    item.item_amount = it.toDouble()
 
                                 })
                             }
@@ -563,6 +592,18 @@ fun MainScreenFees(onProceedClicked: (List<CollectFeeData>) -> Unit, navControll
                     confirmButton = {
                         Button(onClick = {
                             Log.d("Items List",itemsList.toString())
+                            val billCol = BillItemCollection(0,userDetails.name,userDetails.address,userDetails.mobile,userDetails.email,"billno",
+                                transactionRemark,
+                            taxPer,
+                            totalAmount,
+                                (totalAmount * (1 + taxPer / 100)).roundToInt() - discountAmount.roundToInt().toDouble(),
+                                0.0,
+                                discountAmount,
+                                "remarks",
+                                System.currentTimeMillis(),
+                                userDetails.name,
+                                false)
+                            onFeePaid(billCol,itemsList)
                             //Call API here
                             /*if(isOnileModeChecked.value)
                                 viewModel.feePayInfo.value.paymode=2
@@ -613,7 +654,7 @@ fun HeaderLayout(
     var isMenuExpanded by remember { mutableStateOf(false) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
     var isPrinterExpanded by remember { mutableStateOf(false) }
-    var userDetails = viewModel.getUserDetails()
+    val userDetails = viewModel.getUserDetails()
 
 
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -777,10 +818,11 @@ fun HeaderScreen(userDetails: UserDetails?, onSetUserDetails: () -> Unit) {
 
 @Composable
 fun SettingsPopup(
-    userDetails: UserDetails,
+    userDetail: UserDetails?,
     onDismissRequest: () -> Unit,
     onSaveClicked: (UserDetails) -> Unit
 ) {
+    val userDetails by remember{ mutableStateOf(userDetail!!) }
     var isEditable by remember { mutableStateOf(false) }
     Dialog(
         onDismissRequest = onDismissRequest,
