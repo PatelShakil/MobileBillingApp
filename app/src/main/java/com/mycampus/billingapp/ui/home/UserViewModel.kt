@@ -23,7 +23,6 @@ private val billingRepository : BillRepository) : ViewModel() {
     }
 
 
-
     fun getUserDetails() :UserDetails?{
         return userRepository.getUserDetails()
     }
