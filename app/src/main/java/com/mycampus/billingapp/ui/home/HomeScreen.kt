@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.Color.Companion.Gray
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -115,6 +116,55 @@ fun HomeScreen(
                 pwd = false,
                 staffward = false,
                 singlegirlchild = false,
+                true,
+                rollNo = 3,
+                feeAccountNo = 12345678,
+                onClick = { /*TODO*/ })
+            Spacer(modifier = Modifier.height(10.dp))
+            StudentInfoCard(
+                admissionType = "abc1234",
+                studentDBuid = "123455",
+                classid = "2",
+                classname = "",
+                sectionid = "",
+                sectionName = "B" ,
+                name = "John Doe",
+                fathername = "Wick",
+                schoolAdmissionNo = "ABC1123" ,
+                contactNo = "1234567890",
+                gender = "Female" ,
+                imageURL = "https://i.pinimg.com/originals/5a/dd/33/5add3332302c9db5e9a6aeedfeb6b29b.jpg",
+                navController = navController,
+                ews = false,
+                rte = false,
+                pwd = false,
+                staffward = false,
+                singlegirlchild = false,
+                true,
+                rollNo = 3,
+                feeAccountNo = 12345678,
+                onClick = { /*TODO*/ })
+            Spacer(modifier = Modifier.height(10.dp))
+            StudentInfoCard(
+                admissionType = "abc1234",
+                studentDBuid = "123455",
+                classid = "2",
+                classname = "",
+                sectionid = "",
+                sectionName = "B" ,
+                name = "John Doe",
+                fathername = "Wick",
+                schoolAdmissionNo = "ABC1123" ,
+                contactNo = "1234567890",
+                gender = "Male" ,
+                imageURL = "https://i.pinimg.com/originals/5a/dd/33/5add3332302c9db5e9a6aeedfeb6b29b.jpg",
+                navController = navController,
+                ews = false,
+                rte = false,
+                pwd = false,
+                staffward = false,
+                singlegirlchild = false,
+                false,
                 rollNo = 3,
                 feeAccountNo = 12345678,
                 onClick = { /*TODO*/ })
@@ -182,7 +232,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :String,classname :String, sectionid: String,sectionName :String, name: String, fathername: String, schoolAdmissionNo: String, contactNo: String, gender: String, imageURL:String, navController: NavController,ews:Boolean, rte:Boolean, pwd:Boolean, staffward:Boolean, singlegirlchild:Boolean, rollNo : Int,feeAccountNo : Int, onClick: () -> Unit,isAdminSection: Boolean=true) {
+fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :String,classname :String, sectionid: String,sectionName :String, name: String, fathername: String, schoolAdmissionNo: String, contactNo: String, gender: String, imageURL:String, navController: NavController,ews:Boolean, rte:Boolean, pwd:Boolean, staffward:Boolean, singlegirlchild:Boolean,isVehileEnabled : Boolean, rollNo : Int,feeAccountNo : Int, onClick: () -> Unit,isAdminSection: Boolean=true) {
     var counter=0
     val painter= rememberAsyncImagePainter(model = imageURL)
     val spacing = MaterialTheme.spacing
@@ -216,179 +266,198 @@ fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :Strin
                 {
 
                 }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .background(
-                            if (gender.lowercase() == "male") Color(0xFFD3EAE2) else Color(
-                                0xFFE4E2F8
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .background(
+                        if (gender.lowercase() == "male") Color(0xFFD3EAE2) else Color(
+                            0xFFE4E2F8
+                        )
+                    )) {
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight()
+                            .padding(start = 10.dp,top = 10.dp,end = 10.dp,bottom = 10.dp)
+                    )
+                    {
+                        Column(horizontalAlignment = CenterHorizontally) {
+                            Image(
+                                painter = painter,
+                                contentDescription = "",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(110.dp)
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        //launcher.launch("image/jpeg")
+                                    }
                             )
-                        )
-                        .padding(5.dp)
-                        .padding(5.dp)
-                )
-                {
-                    Text("\uD83D\uDE87")
-                    Column(horizontalAlignment = CenterHorizontally) {
-                        Image(
-                            painter = painter,
-                            contentDescription = "",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(110.dp)
-                                .clip(CircleShape)
-                                .clickable {
-                                    //launcher.launch("image/jpeg")
-                                }
-                        )
-//                        GenerateStudentType(ews, rte , pwd , staffward , singlegirlchild)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Row {
-                            Column(
-                                modifier = Modifier.weight(.6f),
-                                horizontalAlignment = CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "( ${classname} - ${sectionName} )",
-                                    fontSize = 13.sp,
-                                    //color = Color.Gray,
-                                    //modifier = Modifier.padding(top = 5.dp),
-                                    fontWeight = FontWeight.Bold
-
-                                )
-                                Text(
-                                    text = name,
-                                    fontSize = 13.sp,
-                                    //color = Color.Gray,
-                                    //modifier = Modifier.padding(top = 5.dp),
-                                    fontWeight = FontWeight.Bold
-
-                                )
-                                if (fathername.isNotEmpty()) {
+                            //                        GenerateStudentType(ews, rte , pwd , staffward , singlegirlchild)
+                        }
+                        Column(
+                            horizontalAlignment = CenterHorizontally
+                        ) {
+                            Row {
+                                Column(
+                                    modifier = Modifier.weight(.6f),
+                                    horizontalAlignment = CenterHorizontally
+                                ) {
                                     Text(
-                                        text = "$fathername ( F )",
+                                        text = "( ${classname} - ${sectionName} )",
+                                        fontSize = 13.sp,
+                                        //color = Color.Gray,
+                                        //modifier = Modifier.padding(top = 5.dp),
+                                        fontWeight = FontWeight.Bold
+
+                                    )
+                                    Text(
+                                        text = name,
+                                        fontSize = 13.sp,
+                                        //color = Color.Gray,
+                                        //modifier = Modifier.padding(top = 5.dp),
+                                        fontWeight = FontWeight.Bold
+
+                                    )
+                                    if (fathername.isNotEmpty()) {
+                                        Text(
+                                            text = "$fathername ( F )",
+                                            fontSize = 12.sp,
+                                            color = Black,
+                                            //modifier = Modifier.padding(12.dp),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Text(
+                                        text = if (feeAccountNo > 0) "UID - ${schoolAdmissionNo} ( ${feeAccountNo} )" else "UID - ${schoolAdmissionNo}",
+                                        //text = "Adm. No. - $schoolAdmissionNo",
                                         fontSize = 12.sp,
-                                        color = Color.Black,
+                                        color = if (admissionType.lowercase() == "temp") Color.Red else Black,
+                                        //modifier = Modifier.padding(12.dp),
+                                        fontWeight = FontWeight.Bold
+                                    )
+
+
+                                    Text(
+                                        // text = "Admission Date-  ${context.toDateString(studentDTO.admissiondate)}",
+                                        text = "Mobile - $contactNo",
+                                        fontSize = 12.sp,
+                                        //color = Color.Gray,
                                         //modifier = Modifier.padding(12.dp),
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
-                                Text(
-                                    text = if(feeAccountNo > 0) "UID - ${schoolAdmissionNo} ( ${feeAccountNo} )" else "UID - ${schoolAdmissionNo}",
-                                    //text = "Adm. No. - $schoolAdmissionNo",
-                                    fontSize = 12.sp,
-                                    color = if (admissionType.lowercase() == "temp") Color.Red else Color.Black,
-                                    //modifier = Modifier.padding(12.dp),
-                                    fontWeight = FontWeight.Bold
-                                )
 
-
-                                Text(
-                                    // text = "Admission Date-  ${context.toDateString(studentDTO.admissiondate)}",
-                                    text = "Mobile - $contactNo",
-                                    fontSize = 12.sp,
-                                    //color = Color.Gray,
-                                    //modifier = Modifier.padding(12.dp),
-                                    fontWeight = FontWeight.Bold
-                                )
                             }
 
-                        }
+                            Column(
+                                horizontalAlignment = CenterHorizontally
+                            ) {
 
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-
-                            if (isAdminSection) {
-                                Row() {
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(spacing.small))
-                                            .wrapContentWidth()
-                                            //.padding(start =padding.dp )
-                                            .background(MaterialTheme.colorScheme.primary)
-                                            .clickable() {
-                                                navController.navigate("studentindinfo/${studentDBuid}")
-
-                                            }
-                                    ) {
-                                        Text(
-                                            text = "Profile Info",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSecondary,
-                                            modifier = Modifier.padding(
-                                                top = spacing.extraSmall,
-                                                bottom = spacing.extraSmall,
-                                                start = spacing.small,
-                                                end = spacing.small
-                                            )
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(spacing.small))
-                                            .wrapContentWidth()
-                                            //.padding(start =padding.dp )
-                                            .background(MaterialTheme.colorScheme.primary)
-                                            .clickable() {
-                                                if (admissionType.lowercase() == "temp") {
-//                                                    context.toast("This is registration, first confirm this admission, then you can pay fee")
-                                                } else {
-                                                    val oldVal = '/'
-                                                    val newVal = '*'
-                                                    val formattedAdmNo =
-                                                        schoolAdmissionNo.replace(oldVal, newVal)
-                                                    navController.navigate("feeinfo/${studentDBuid}/${classid}/${classname}/${sectionid}/${sectionName}/${name}/${formattedAdmNo}/${contactNo}/${feeAccountNo}")
+                                if (isAdminSection) {
+                                    Row() {
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(spacing.small))
+                                                .wrapContentWidth()
+                                                //.padding(start =padding.dp )
+                                                .background(MaterialTheme.colorScheme.primary)
+                                                .clickable() {
+                                                    navController.navigate("studentindinfo/${studentDBuid}")
 
                                                 }
-                                            }
-                                    ) {
-                                        Text(
-                                            text = "Fee Info",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSecondary,
-                                            modifier = Modifier.padding(
-                                                top = spacing.extraSmall,
-                                                bottom = spacing.extraSmall,
-                                                start = spacing.small,
-                                                end = spacing.small
-                                            )
-                                        )
-                                    }
-                                }
-                            } else {
-                                Row() {
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(spacing.small))
-                                            .wrapContentWidth()
-                                            //.padding(start =padding.dp )
-                                            .background(
-                                                if (gender.lowercase() == "male") Color(0xFF2F3B81) else Color(
-                                                    0xFFE91E63
+                                        ) {
+                                            Text(
+                                                text = "Profile Info",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSecondary,
+                                                modifier = Modifier.padding(
+                                                    top = spacing.extraSmall,
+                                                    bottom = spacing.extraSmall,
+                                                    start = spacing.small,
+                                                    end = spacing.small
                                                 )
                                             )
-                                    ) {
-                                        Text(
-                                            text = "I'm your ${gender.lowercase()} Mate",
-                                            textAlign = TextAlign.Center,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSecondary,
-                                            modifier = Modifier.padding(
-                                                top = spacing.extraSmall,
-                                                bottom = spacing.extraSmall,
-                                                start = spacing.small,
-                                                end = spacing.small
+                                        }
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(spacing.small))
+                                                .wrapContentWidth()
+                                                //.padding(start =padding.dp )
+                                                .background(MaterialTheme.colorScheme.primary)
+                                                .clickable() {
+                                                    if (admissionType.lowercase() == "temp") {
+                                                        //                                                    context.toast("This is registration, first confirm this admission, then you can pay fee")
+                                                    } else {
+                                                        val oldVal = '/'
+                                                        val newVal = '*'
+                                                        val formattedAdmNo =
+                                                            schoolAdmissionNo.replace(
+                                                                oldVal,
+                                                                newVal
+                                                            )
+                                                        navController.navigate("feeinfo/${studentDBuid}/${classid}/${classname}/${sectionid}/${sectionName}/${name}/${formattedAdmNo}/${contactNo}/${feeAccountNo}")
+
+                                                    }
+                                                }
+                                        ) {
+                                            Text(
+                                                text = "Fee Info",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSecondary,
+                                                modifier = Modifier.padding(
+                                                    top = spacing.extraSmall,
+                                                    bottom = spacing.extraSmall,
+                                                    start = spacing.small,
+                                                    end = spacing.small
+                                                )
                                             )
-                                        )
+                                        }
+                                    }
+                                } else {
+                                    Row() {
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(spacing.small))
+                                                .wrapContentWidth()
+                                                //.padding(start =padding.dp )
+                                                .background(
+                                                    if (gender.lowercase() == "male") Color(
+                                                        0xFF2F3B81
+                                                    ) else Color(
+                                                        0xFFE91E63
+                                                    )
+                                                )
+                                        ) {
+                                            Text(
+                                                text = "I'm your ${gender.lowercase()} Mate",
+                                                textAlign = TextAlign.Center,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSecondary,
+                                                modifier = Modifier.padding(
+                                                    top = spacing.extraSmall,
+                                                    bottom = spacing.extraSmall,
+                                                    start = spacing.small,
+                                                    end = spacing.small
+                                                )
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
+                    }
+                    if(isVehileEnabled) {
+                        Image(
+                            painter = painterResource(
+                                id = if (gender.lowercase() == "male") R.drawable.quarter_circle_male_trans
+                                else R.drawable.quarter_circle_female_trans
+                            ),
+                            "",
+                            modifier = Modifier.size(30.dp).background(Transparent)
+                        )
                     }
                 }
             }
@@ -397,14 +466,14 @@ fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :Strin
                     contentAlignment = Center,
                     modifier = Modifier.align(TopEnd)
                 ) {
-//                    Image(
-//                        painter = painterResource(
-//                            id = if (gender.lowercase() == "male") R.drawable.roll_img_quarter_circle_male
-//                            else R.drawable.roll_img_quarter_circle_female
-//                        ),
-//                        "",
-//                        modifier = Modifier.size(50.dp)
-//                    )
+                    Image(
+                        painter = painterResource(
+                            id = if (gender.lowercase() == "male") R.drawable.quarter_circle_male
+                            else R.drawable.quarter_circle_female
+                        ),
+                        "",
+                        modifier = Modifier.size(50.dp)
+                    )
                     Text(
                         text = "${rollNo}",
                         style = MaterialTheme.typography.titleSmall,
