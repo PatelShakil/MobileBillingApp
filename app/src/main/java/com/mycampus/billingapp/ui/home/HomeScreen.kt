@@ -1,46 +1,33 @@
 package com.mycampus.billingapp.ui.home
 
+//import androidx.compose.ui.Modifier
+//import androidx.compose.ui.graphics.Color
+//import androidx.compose.ui.text.font.FontWeight
+//import androidx.compose.ui.text.style.TextAlign
+//import androidx.compose.ui.window.DialogProperties
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothManager
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
+import androidx.compose.material.Checkbox
+import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Center
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
+import androidx.compose.ui.Alignment.Companion.TopEnd
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -48,6 +35,7 @@ import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.Color.Companion.Gray
 import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,7 +46,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.Utils
 import com.mycampus.billingapp.data.models.UserDetails
@@ -67,7 +57,17 @@ import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.domain.bluetooth.BluetoothDevice
 import com.mycampus.billingapp.ui.nav.Screen
+import com.mycampus.billingapp.ui.theme.spacing
 import kotlin.math.roundToInt
+
+//import androidx.navigation.NavController
+//import coil.compose.rememberAsyncImagePainter
+//import com.mycampus.smsapp.R
+//import com.mycampus.smsapp.ui.common.GenerateStudentType
+//import com.mycampus.smsapp.ui.theme.LightMainColor
+//import com.mycampus.smsapp.ui.theme.MainColor
+//import com.mycampus.smsapp.ui.theme.spacing
+//import com.mycampus.smsapp.ui.utils.toast
 
 
 @Composable
@@ -96,6 +96,29 @@ fun HomeScreen(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
         ) {
+            StudentInfoCard(
+                admissionType = "abc1234",
+                studentDBuid = "123455",
+                classid = "2",
+                classname = "",
+                sectionid = "",
+                sectionName = "B" ,
+                name = "John Doe",
+                fathername = "Wick",
+                schoolAdmissionNo = "ABC1123" ,
+                contactNo = "1234567890",
+                gender = "Male" ,
+                imageURL = "https://i.pinimg.com/originals/5a/dd/33/5add3332302c9db5e9a6aeedfeb6b29b.jpg",
+                navController = navController,
+                ews = false,
+                rte = false,
+                pwd = false,
+                staffward = false,
+                singlegirlchild = false,
+                rollNo = 3,
+                feeAccountNo = 12345678,
+                onClick = { /*TODO*/ })
+            Spacer(modifier = Modifier.height(10.dp))
             MainScreenFees(
                 viewModel.getUserDetails() ?: UserDetails(),
                 onProceedClicked = {},
@@ -157,6 +180,246 @@ fun HomeScreen(
         )
     }
 }
+
+@Composable
+fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :String,classname :String, sectionid: String,sectionName :String, name: String, fathername: String, schoolAdmissionNo: String, contactNo: String, gender: String, imageURL:String, navController: NavController,ews:Boolean, rte:Boolean, pwd:Boolean, staffward:Boolean, singlegirlchild:Boolean, rollNo : Int,feeAccountNo : Int, onClick: () -> Unit,isAdminSection: Boolean=true) {
+    var counter=0
+    val painter= rememberAsyncImagePainter(model = imageURL)
+    val spacing = MaterialTheme.spacing
+    val context = LocalContext.current
+
+    androidx.compose.material3.Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(start = spacing.medium, end = spacing.medium, top = spacing.medium)
+            .clickable {
+                counter++
+                if (counter.rem(2) == 0) {
+                    //val intent = Intent(Intent.ACTION_CALL) with manifist permission
+                    val intent = Intent(Intent.ACTION_DIAL)
+                    intent.data = Uri.parse("tel:$contactNo")
+                    startActivity(context, intent, null)
+                }
+            }
+    )
+    {
+
+        Box {
+            Row() {
+                Column(modifier = Modifier
+                    .width(10.dp)
+                    .background(
+                        if (gender.lowercase() == "male") Color(0xFFA8D9C5) else Color(0xFF283B5B)
+                    )
+                    .height(155.dp))
+                {
+
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .background(
+                            if (gender.lowercase() == "male") Color(0xFFD3EAE2) else Color(
+                                0xFFE4E2F8
+                            )
+                        )
+                        .padding(5.dp)
+                        .padding(5.dp)
+                )
+                {
+                    Text("\uD83D\uDE87")
+                    Column(horizontalAlignment = CenterHorizontally) {
+                        Image(
+                            painter = painter,
+                            contentDescription = "",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(110.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    //launcher.launch("image/jpeg")
+                                }
+                        )
+//                        GenerateStudentType(ews, rte , pwd , staffward , singlegirlchild)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row {
+                            Column(
+                                modifier = Modifier.weight(.6f),
+                                horizontalAlignment = CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "( ${classname} - ${sectionName} )",
+                                    fontSize = 13.sp,
+                                    //color = Color.Gray,
+                                    //modifier = Modifier.padding(top = 5.dp),
+                                    fontWeight = FontWeight.Bold
+
+                                )
+                                Text(
+                                    text = name,
+                                    fontSize = 13.sp,
+                                    //color = Color.Gray,
+                                    //modifier = Modifier.padding(top = 5.dp),
+                                    fontWeight = FontWeight.Bold
+
+                                )
+                                if (fathername.isNotEmpty()) {
+                                    Text(
+                                        text = "$fathername ( F )",
+                                        fontSize = 12.sp,
+                                        color = Color.Black,
+                                        //modifier = Modifier.padding(12.dp),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Text(
+                                    text = if(feeAccountNo > 0) "UID - ${schoolAdmissionNo} ( ${feeAccountNo} )" else "UID - ${schoolAdmissionNo}",
+                                    //text = "Adm. No. - $schoolAdmissionNo",
+                                    fontSize = 12.sp,
+                                    color = if (admissionType.lowercase() == "temp") Color.Red else Color.Black,
+                                    //modifier = Modifier.padding(12.dp),
+                                    fontWeight = FontWeight.Bold
+                                )
+
+
+                                Text(
+                                    // text = "Admission Date-  ${context.toDateString(studentDTO.admissiondate)}",
+                                    text = "Mobile - $contactNo",
+                                    fontSize = 12.sp,
+                                    //color = Color.Gray,
+                                    //modifier = Modifier.padding(12.dp),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                        }
+
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+
+                            if (isAdminSection) {
+                                Row() {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(spacing.small))
+                                            .wrapContentWidth()
+                                            //.padding(start =padding.dp )
+                                            .background(MaterialTheme.colorScheme.primary)
+                                            .clickable() {
+                                                navController.navigate("studentindinfo/${studentDBuid}")
+
+                                            }
+                                    ) {
+                                        Text(
+                                            text = "Profile Info",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSecondary,
+                                            modifier = Modifier.padding(
+                                                top = spacing.extraSmall,
+                                                bottom = spacing.extraSmall,
+                                                start = spacing.small,
+                                                end = spacing.small
+                                            )
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(spacing.small))
+                                            .wrapContentWidth()
+                                            //.padding(start =padding.dp )
+                                            .background(MaterialTheme.colorScheme.primary)
+                                            .clickable() {
+                                                if (admissionType.lowercase() == "temp") {
+//                                                    context.toast("This is registration, first confirm this admission, then you can pay fee")
+                                                } else {
+                                                    val oldVal = '/'
+                                                    val newVal = '*'
+                                                    val formattedAdmNo =
+                                                        schoolAdmissionNo.replace(oldVal, newVal)
+                                                    navController.navigate("feeinfo/${studentDBuid}/${classid}/${classname}/${sectionid}/${sectionName}/${name}/${formattedAdmNo}/${contactNo}/${feeAccountNo}")
+
+                                                }
+                                            }
+                                    ) {
+                                        Text(
+                                            text = "Fee Info",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSecondary,
+                                            modifier = Modifier.padding(
+                                                top = spacing.extraSmall,
+                                                bottom = spacing.extraSmall,
+                                                start = spacing.small,
+                                                end = spacing.small
+                                            )
+                                        )
+                                    }
+                                }
+                            } else {
+                                Row() {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(spacing.small))
+                                            .wrapContentWidth()
+                                            //.padding(start =padding.dp )
+                                            .background(
+                                                if (gender.lowercase() == "male") Color(0xFF2F3B81) else Color(
+                                                    0xFFE91E63
+                                                )
+                                            )
+                                    ) {
+                                        Text(
+                                            text = "I'm your ${gender.lowercase()} Mate",
+                                            textAlign = TextAlign.Center,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSecondary,
+                                            modifier = Modifier.padding(
+                                                top = spacing.extraSmall,
+                                                bottom = spacing.extraSmall,
+                                                start = spacing.small,
+                                                end = spacing.small
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if(rollNo > 0) {
+                Box(
+                    contentAlignment = Center,
+                    modifier = Modifier.align(TopEnd)
+                ) {
+//                    Image(
+//                        painter = painterResource(
+//                            id = if (gender.lowercase() == "male") R.drawable.roll_img_quarter_circle_male
+//                            else R.drawable.roll_img_quarter_circle_female
+//                        ),
+//                        "",
+//                        modifier = Modifier.size(50.dp)
+//                    )
+                    Text(
+                        text = "${rollNo}",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Black,
+                        color = if(gender.lowercase() == "male") Color.Black
+                        else Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
+    }
+}
+
 
 @Composable
 fun BottomCard(

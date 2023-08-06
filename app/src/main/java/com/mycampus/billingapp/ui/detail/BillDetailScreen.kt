@@ -49,9 +49,11 @@ fun BillDetailScreen(viewModel: UserViewModel, navController: NavController) {
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_filter), "",
-                modifier = Modifier.clickable {
-                    isFilterClick = !isFilterClick
-                }.size(35.dp),
+                modifier = Modifier
+                    .clickable {
+                        isFilterClick = !isFilterClick
+                    }
+                    .size(35.dp),
                 tint = MainColor,
             )
         }
@@ -185,7 +187,7 @@ fun BillDetails(list: List<BillItemCollectionWithBillItems>) {
                     it.itemCollection.total_amount
                 }
             BillItemWithAmountOnBillBelow(
-                data = "Amount",
+                data = "Sub Total",
                 amount = ((totalAmount * list[0].itemCollection.tax) / 100) - list[0].itemCollection.discount + totalAmount
             )
             Divider(
@@ -208,22 +210,28 @@ fun BillDetails(list: List<BillItemCollectionWithBillItems>) {
                     .fillMaxWidth()
                     .border(.5.dp, Color.Black)
             )
-            BillItemWithAmountOnBillBelow(data = "Total Payable Amount", amount = totalAmount)
+            BillItemWithAmountOnBillBelow(data = "Total Amount", amount = totalAmount)
             Divider(
                 modifier = Modifier
                     .fillMaxWidth()
                     .border(.5.dp, Color.Black)
             )
-            Text("Payment mode : " + if(list[0].itemCollection.bill_pay_mode == "Pay by Cash") "Cash" else "Online",
-            fontSize = 12.sp,
-            modifier = Modifier.padding(start = 5.dp))
-            Divider(modifier = Modifier
-                .fillMaxWidth()
-                .border(.5.dp, Color.Black))
-            Text(list[0].itemCollection.remarks,
-            fontSize = 12.sp,
+            Text(
+                "Payment mode : " + if (list[0].itemCollection.bill_pay_mode == "Pay by Cash") "Cash" else "Online",
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 5.dp)
+            )
+            Divider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(.5.dp, Color.Black)
+            )
+            Text(
+                list[0].itemCollection.remarks,
+                fontSize = 12.sp,
                 modifier = Modifier.padding(start = 5.dp),
-            style = MaterialTheme.typography.bodySmall)
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
