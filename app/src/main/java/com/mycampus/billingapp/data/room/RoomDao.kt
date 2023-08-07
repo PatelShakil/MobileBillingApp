@@ -8,11 +8,15 @@ import androidx.room.Transaction
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
+import com.mycampus.billingapp.data.room.entities.CustomerItem
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface RoomDao {
 
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCustomer(customerItem: CustomerItem)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBillItemCol(itemCol : BillItemCollection)

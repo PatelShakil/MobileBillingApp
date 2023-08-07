@@ -9,10 +9,7 @@ import androidx.room.Relation
 data class BillItemCollection(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    var customer_name : String,
-    var customer_address : String,
-    var mobile : String,
-    var email : String,
+    val customerid:Long,
     var bill_no : String,
     var bill_pay_mode : String,
     var tax : Double,
@@ -31,6 +28,10 @@ data class BillItemCollectionWithBillItems(
     @Relation(
         parentColumn = "id",
         entityColumn = "bill_info_id"
+    )
+    @Relation(
+        parentColumn = "customerid",
+        entityColumn = "id"
     )
     val itemList: List<BillItem>
 )
