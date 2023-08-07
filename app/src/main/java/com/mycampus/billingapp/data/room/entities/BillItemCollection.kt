@@ -29,10 +29,6 @@ data class BillItemCollectionWithBillItems(
         parentColumn = "id",
         entityColumn = "bill_info_id"
     )
-    @Relation(
-        parentColumn = "customerid",
-        entityColumn = "id"
-    )
     val itemList: List<BillItem>
 )
 

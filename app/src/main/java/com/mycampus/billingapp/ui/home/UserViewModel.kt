@@ -9,14 +9,19 @@ import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.data.repo.BillRepository
+import com.mycampus.billingapp.data.repo.CustomerRepository
 import com.mycampus.billingapp.data.repo.UserRepository
+import com.mycampus.billingapp.data.room.entities.CustomerItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class UserViewModel @Inject constructor(private val userRepository: UserRepository,
-private val billingRepository : BillRepository) : ViewModel() {
+class UserViewModel @Inject constructor(
+    private val userRepository: UserRepository,
+private val billingRepository : BillRepository,
+private val customerRepository: CustomerRepository
+) : ViewModel() {
 
     fun saveUserDetails(userDetails: UserDetails) = viewModelScope.launch{
         userRepository.saveUserDetails(userDetails)
@@ -28,6 +33,8 @@ private val billingRepository : BillRepository) : ViewModel() {
     }
     val allItemCollections: LiveData<List<BillItemCollectionWithBillItems>> =
         billingRepository.getAllItemCollectionsWithFeeItems().asLiveData()
+
+
 
     fun addItemCollection(billItemCollection: BillItemCollection, feeItems: List<BillItem>) {
         viewModelScope.launch {

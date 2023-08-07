@@ -52,11 +52,16 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.Utils
+import com.mycampus.billingapp.common.uicomponents.CusDropdown
+import com.mycampus.billingapp.common.uicomponents.DropDownItemData
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
+import com.mycampus.billingapp.data.room.entities.CustomerItem
 import com.mycampus.billingapp.domain.bluetooth.BluetoothDevice
+import com.mycampus.billingapp.ui.customer.AddCustomerPopupScreen
+import com.mycampus.billingapp.ui.customer.CustomerViewModel
 import com.mycampus.billingapp.ui.nav.Screen
 import com.mycampus.billingapp.ui.theme.spacing
 import kotlin.math.roundToInt
@@ -74,6 +79,7 @@ import kotlin.math.roundToInt
 @Composable
 fun HomeScreen(
     viewModel: UserViewModel,
+    customerViewModel: CustomerViewModel,
     navController: NavController
 ) {
     val userDetails = viewModel.getUserDetails()
@@ -97,6 +103,7 @@ fun HomeScreen(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
         ) {
+            /*
             StudentInfoCard(
                 admissionType = "abc1234",
                 studentDBuid = "123455",
@@ -119,7 +126,7 @@ fun HomeScreen(
                 true,
                 rollNo = 3,
                 feeAccountNo = 12345678,
-                onClick = { /*TODO*/ })
+                onClick = { *//*TODO*//* })
             Spacer(modifier = Modifier.height(10.dp))
             StudentInfoCard(
                 admissionType = "abc1234",
@@ -143,7 +150,7 @@ fun HomeScreen(
                 true,
                 rollNo = 3,
                 feeAccountNo = 12345678,
-                onClick = { /*TODO*/ })
+                onClick = { *//*TODO*//* })
             Spacer(modifier = Modifier.height(10.dp))
             StudentInfoCard(
                 admissionType = "abc1234",
@@ -167,16 +174,24 @@ fun HomeScreen(
                 false,
                 rollNo = 3,
                 feeAccountNo = 12345678,
-                onClick = { /*TODO*/ })
+                onClick = { *//*TODO*//* })*/
             Spacer(modifier = Modifier.height(10.dp))
+
+            var customerCol by remember{ mutableStateOf(listOf<CustomerItem>()) }
+            customerViewModel.allCustomers.observeForever {
+                customerCol = it
+            }
+
             MainScreenFees(
                 viewModel.getUserDetails() ?: UserDetails(),
+                customerCol,
                 onProceedClicked = {},
-                navController = NavController(LocalContext.current)
-            ) { billCol, list ->
+                navController = NavController(LocalContext.current) ,{ billCol, list ->
                 Log.d("billCol", billCol.toString())
                 Log.d("BillItemList", list.toString())
                 viewModel.addItemCollection(billCol, list)
+            }){
+                customerViewModel.addCustomer(it)
             }
 
             if (itemCol.isNotEmpty()) {
@@ -279,7 +294,7 @@ fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :Strin
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentHeight()
-                            .padding(start = 10.dp,top = 10.dp,end = 10.dp,bottom = 10.dp)
+                            .padding(start = 10.dp, top = 10.dp, end = 10.dp, bottom = 10.dp)
                     )
                     {
                         Column(horizontalAlignment = CenterHorizontally) {
@@ -456,7 +471,9 @@ fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :Strin
                                 else R.drawable.quarter_circle_female_trans
                             ),
                             "",
-                            modifier = Modifier.size(30.dp).background(Transparent)
+                            modifier = Modifier
+                                .size(30.dp)
+                                .background(Transparent)
                         )
                     }
                 }
@@ -563,9 +580,11 @@ data class CollectFeeData(
 @Composable
 fun MainScreenFees(
     userDetails: UserDetails,
+    customersList : List<CustomerItem>,
     onProceedClicked: (List<CollectFeeData>) -> Unit,
     navController: NavController,
-    onFeePaid: (BillItemCollection, List<BillItem>) -> Unit
+    onFeePaid: (BillItemCollection, List<BillItem>) -> Unit,
+    onCustomerAddClicked:(CustomerItem)->Unit
 ) {
     val context = LocalContext.current
 //    var studentName = viewModel.studentName.collectAsState()
@@ -602,6 +621,7 @@ fun MainScreenFees(
             mutableStateOf(1)
         }
         val feeDataList = mutableListOf<CollectFeeData>()
+        var remarks by remember{mutableStateOf("")}
 //        val listOfFinalData = mutableListOf<OtherItemsInfo>()
         Column(
             modifier = Modifier
@@ -649,6 +669,39 @@ fun MainScreenFees(
             var discountAmount by remember { mutableStateOf(0.0) }
             var taxPer by remember { mutableStateOf(0.0) }
             var totalAmount = 0.0
+            var customerid by remember{mutableStateOf("")}
+            var isCustomerAdd by remember{mutableStateOf(false)}
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(.8f)) {
+                    CusDropdown(
+                        label = "Customer",
+                        options = customersList.map { DropDownItemData(it.id.toString(), it.name) },
+                        onSelected = {
+                            customerid = it.id
+                        })
+                }
+
+                Spacer(Modifier.width(10.dp))
+                Icon(imageVector = Icons.Default.Add, contentDescription = "",
+                    modifier = Modifier
+                        .height(30.dp)
+                        .width(30.dp)
+                        .clip(CircleShape)
+                        .border(.5.dp, Gray, CircleShape)
+                        .background(Color.White)
+                        .clickable {
+                            isCustomerAdd = true
+                        })
+                Spacer(modifier = Modifier.width(10.dp))
+            }
+            if(isCustomerAdd){
+                AddCustomerPopupScreen(customer = CustomerItem(0,"","","",""), onDismiss = {
+                    isCustomerAdd = !isCustomerAdd
+                }, onConfirm = {
+                    onCustomerAddClicked(it)
+                })
+            }
 
             Box(modifier = Modifier.fillMaxWidth(.94f), contentAlignment = Alignment.Center) {
                 Text(
@@ -759,6 +812,22 @@ fun MainScreenFees(
                         modifier = Modifier.weight(.3f)
                     )
                 }
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                )
+                TextField(value = remarks, onValueChange = {
+                    remarks = it
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text("Remarks",style = MaterialTheme.typography.bodySmall)
+                },
+                colors = TextFieldDefaults.textFieldColors(
+                    backgroundColor = Transparent,
+                    focusedIndicatorColor = MainColor
+                ))
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -988,10 +1057,7 @@ fun MainScreenFees(
                             Log.d("Items List", itemsList.toString())
                             val billCol = BillItemCollection(
                                 0,
-                                userDetails.name,
-                                userDetails.address,
-                                userDetails.mobile,
-                                userDetails.email,
+                                customerid.toLong(),
                                 Utils.generateRandomValue(9),
                                 transactionRemark,
                                 taxPer,
@@ -1000,7 +1066,7 @@ fun MainScreenFees(
                                     .toDouble(),
                                 0.0,
                                 discountAmount,
-                                "remarks",
+                                remarks,
                                 System.currentTimeMillis(),
                                 userDetails.name,
                                 false

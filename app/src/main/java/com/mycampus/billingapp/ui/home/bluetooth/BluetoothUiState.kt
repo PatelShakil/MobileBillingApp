@@ -1,4 +1,4 @@
-package com.mycampus.billingapp.ui.home
+package com.mycampus.billingapp.ui.home.bluetooth
 
 import com.mycampus.billingapp.domain.bluetooth.BluetoothDevice
 

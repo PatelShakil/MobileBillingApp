@@ -31,10 +31,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mycampus.billingapp.data.models.UserDetails
+import com.mycampus.billingapp.ui.customer.CustomerScreen
 import com.mycampus.billingapp.ui.detail.BillDetailScreen
-import com.mycampus.billingapp.ui.home.BluetoothUiState
-import com.mycampus.billingapp.ui.home.BluetoothViewModel
-import com.mycampus.billingapp.ui.home.HeaderScreen
+import com.mycampus.billingapp.ui.home.bluetooth.BluetoothUiState
+import com.mycampus.billingapp.ui.home.bluetooth.BluetoothViewModel
 import com.mycampus.billingapp.ui.home.HomeScreen
 import com.mycampus.billingapp.ui.home.MainColor
 import com.mycampus.billingapp.ui.home.PrinterPopup
@@ -67,18 +67,24 @@ fun AppNavigation(onEnableBluetooth:()-> Unit) {
                 btViewModel.startScan()
             }
             btViewModel.startScan()
-        }, onStopScan = btViewModel::stopScan)
+        }, onStopScan = btViewModel::stopScan){
+            navController.navigate(Screen.Customer.route)
+        }
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route
         ) {
             composable(Screen.Home.route) {
-                HomeScreen(hiltViewModel(), navController)
+                HomeScreen(hiltViewModel(), hiltViewModel(), navController)
                 title = "Mobile Billing"
             }
             composable(Screen.Details.route) {
-                BillDetailScreen(hiltViewModel(), navController)
+                BillDetailScreen(hiltViewModel(), hiltViewModel(), navController)
                 title = "Billing Details"
+            }
+            composable(Screen.Customer.route){
+                CustomerScreen(viewModel = hiltViewModel(), navController = navController)
+                title = "Customers"
             }
         }
     }
@@ -89,7 +95,8 @@ fun HeaderLayout(
     state: BluetoothUiState,
     viewModel: UserViewModel,
     onStartScan: () -> Unit,
-    onStopScan: () -> Unit
+    onStopScan: () -> Unit,
+    onCustomerClick:()->Unit
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
@@ -151,6 +158,15 @@ fun HeaderLayout(
                                 }
                             ) {
                                 Text("Others")
+                            }
+                            DropdownMenuItem(
+                                onClick = {
+                                    isMenuExpanded = false
+                                    onCustomerClick()
+                                    // Handle Others menu item click
+                                }
+                            ) {
+                                Text("Customers")
                             }
                         }
                     }

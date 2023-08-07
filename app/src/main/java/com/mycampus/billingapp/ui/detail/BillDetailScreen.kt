@@ -1,5 +1,7 @@
 package com.mycampus.billingapp.ui.detail
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +14,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,12 +40,15 @@ import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.Utils
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
+import com.mycampus.billingapp.data.room.entities.CustomerItem
+import com.mycampus.billingapp.ui.customer.CustomerViewModel
 import com.mycampus.billingapp.ui.home.MainColor
 import com.mycampus.billingapp.ui.home.UserViewModel
+import kotlin.math.roundToInt
 
 
 @Composable
-fun BillDetailScreen(viewModel: UserViewModel, navController: NavController) {
+fun BillDetailScreen(viewModel: UserViewModel, customerViewModel: CustomerViewModel, navController: NavController) {
     var isFilterClick by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf(System.currentTimeMillis()) }
     Column(modifier = Modifier.fillMaxSize()) {
@@ -61,179 +70,216 @@ fun BillDetailScreen(viewModel: UserViewModel, navController: NavController) {
         viewModel.allItemCollections.observeForever {
             itemCol = it
         }
+
+        var customerCol by remember { mutableStateOf(listOf<CustomerItem>()) }
+        customerViewModel.allCustomers.observeForever {
+            customerCol = it
+        }
         Spacer(modifier = Modifier.height(5.dp))
-        if (itemCol.isNotEmpty()) {
+        if (itemCol.isNotEmpty() && customerCol.isNotEmpty()) {
             BillDetails(itemCol.filter {
                 Utils.convertLongToDate(
                     it.itemCollection.creation_date,
                     "DDMMYY"
                 ) == Utils.convertLongToDate(selectedDate, "DDMMYY")
-            })
+            },
+            customerCol)
         }
+    }
+    if(isFilterClick){
+        FilterPopup()
     }
 
 
 }
 
 @Composable
-fun BillDetails(list: List<BillItemCollectionWithBillItems>) {
-    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(
-            modifier = Modifier.fillMaxWidth(.97f),
-        ) {
-            Column(modifier = Modifier.weight(.5f)) {
-                Text(
-                    "Customer Info: ",
-                    fontSize = 14.sp
-                )
-                Text(
-                    list[0].itemCollection.customer_name,
-                    fontSize = 12.sp
-                )
-                Text(
-                    list[0].itemCollection.mobile,
-                    fontSize = 12.sp
-                )
-            }
-            Column(
-                modifier = Modifier.weight(.5f),
-                horizontalAlignment = Alignment.End
-            ) {
-                Text(
-                    "Bill Info: ",
-                    fontSize = 14.sp
-                )
-                Text(
-                    list[0].itemCollection.bill_no,
-                    fontSize = 12.sp
-                )
-                Text(
-                    list[0].itemCollection.created_by,
-                    fontSize = 12.sp
-                )
-            }
-        }
-        Row(modifier = Modifier.fillMaxWidth(.97f)) {
-            Text(
-                text = "Address : ",
-                fontSize = 12.sp,
-                fontWeight = FontWeight(500)
-            )
-            Text(
-                text = list[0].itemCollection.customer_address,
-                fontSize = 12.sp
-            )
-        }
-        Spacer(modifier = Modifier.height(5.dp))
+fun FilterPopup() {
+
+}
+
+@Composable
+fun BillReceiptItem(bill : BillItemCollectionWithBillItems,customerItem: CustomerItem) {
+    Card(modifier = Modifier.fillMaxWidth(.97f),
+        border = BorderStroke(.5.dp, Color.Gray),
+        elevation = CardDefaults.cardElevation(18.dp)
+    ) {
         Column(
             modifier = Modifier
-                .border(.7.dp, Color.Black)
-                .fillMaxWidth(.97f)
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(vertical = 5.dp)
+                .padding(bottom = 5.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                Utils.convertLongToDate(list[0].itemCollection.creation_date, "dd-MMMM-yyyy"),
-                fontSize = 12.sp,
-                modifier = Modifier.padding(10.dp)
-            )
-            Divider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(.5.dp, Color.Black)
-            )
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(.97f),
+            ) {
+                Column(modifier = Modifier.weight(.5f)) {
+                    Text(
+                        "Customer Info: ",
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        customerItem.name,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        customerItem.mobile,
+                        fontSize = 12.sp
+                    )
+                }
+                Column(
+                    modifier = Modifier.weight(.5f),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        "Bill Info: ",
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        bill.itemCollection.bill_no,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        bill.itemCollection.created_by,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+            Row(modifier = Modifier.fillMaxWidth(.97f)) {
                 Text(
-                    text = "Item Name",
-                    modifier = Modifier
-                        .weight(.6f)
-                        .padding(5.dp),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight(400)
-                )
-                Spacer(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(35.dp)
-                        .border(.5.dp, Color.Black)
+                    text = "Address : ",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight(500)
                 )
                 Text(
-                    text = "Amount",
-                    modifier = Modifier.weight(.4f),
-                    textAlign = TextAlign.Center,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight(400)
+                    text = customerItem.address,
+                    fontSize = 12.sp
                 )
             }
-
-            Divider(
+            Spacer(modifier = Modifier.height(5.dp))
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .border(.5.dp, Color.Black)
-            )
-            list[0].itemList.forEachIndexed() { index, billItem ->
-                BillItemWithAmountOnBill(index = index + 1, data = billItem)
+                    .border(.7.dp, Color.Black)
+                    .fillMaxWidth(.97f)
+            ) {
+                Text(
+                    Utils.convertLongToDate(bill.itemCollection.creation_date, "dd-MMMM-yyyy"),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(10.dp)
+                )
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(.5.dp, Color.Black)
                 )
-            }
-            val totalAmount =
-                list.filter {
-                    Utils.convertLongToDate(
-                        it.itemCollection.creation_date,
-                        "DDMMYY"
-                    ) == Utils.convertLongToDate(System.currentTimeMillis(), "DDMMYY")
-                }.sumOf {
-                    it.itemCollection.total_amount
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Item Name",
+                        modifier = Modifier
+                            .weight(.6f)
+                            .padding(5.dp),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight(400)
+                    )
+                    Spacer(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(35.dp)
+                            .border(.5.dp, Color.Black)
+                    )
+                    Text(
+                        text = "Amount",
+                        modifier = Modifier.weight(.4f),
+                        textAlign = TextAlign.Center,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight(400)
+                    )
                 }
-            BillItemWithAmountOnBillBelow(
-                data = "Sub Total",
-                amount = ((totalAmount * list[0].itemCollection.tax) / 100) - list[0].itemCollection.discount + totalAmount
-            )
-            Divider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(.5.dp, Color.Black)
-            )
-            BillItemWithAmountOnBillBelow(data = "Tax", amount = list[0].itemCollection.tax)
-            Divider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(.5.dp, Color.Black)
-            )
-            BillItemWithAmountOnBillBelow(
-                data = "Discount",
-                amount = list[0].itemCollection.discount
-            )
-            Divider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(.5.dp, Color.Black)
-            )
-            BillItemWithAmountOnBillBelow(data = "Total Amount", amount = totalAmount)
-            Divider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(.5.dp, Color.Black)
-            )
-            Text(
-                "Payment mode : " + if (list[0].itemCollection.bill_pay_mode == "Pay by Cash") "Cash" else "Online",
-                fontSize = 12.sp,
-                modifier = Modifier.padding(start = 5.dp)
-            )
-            Divider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(.5.dp, Color.Black)
-            )
-            Text(
-                list[0].itemCollection.remarks,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(start = 5.dp),
-                style = MaterialTheme.typography.bodySmall
-            )
+
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(.5.dp, Color.Black)
+                )
+                bill.itemList.forEachIndexed() { index, billItem ->
+                    BillItemWithAmountOnBill(index = index + 1, data = billItem)
+                    Divider(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(.5.dp, Color.Black)
+                    )
+                }
+                val totalAmount = bill.itemList.sumOf {
+                        it.item_amount
+                    }
+                BillItemWithAmountOnBillBelow(
+                    data = "Sub Total",
+                    amount = (((totalAmount * bill.itemCollection.tax) / 100) + bill.itemCollection.discount + totalAmount ).toString()
+                )
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(.5.dp, Color.Black)
+                )
+                BillItemWithAmountOnBillBelow(data = "Tax", amount = ((totalAmount * bill.itemCollection.tax) / 100).toString() + "*${bill.itemCollection.tax.roundToInt()}%")
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(.5.dp, Color.Black)
+                )
+                BillItemWithAmountOnBillBelow(
+                    data = "Discount",
+                    amount = bill.itemCollection.discount.toString()
+                )
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(.5.dp, Color.Black)
+                )
+                BillItemWithAmountOnBillBelow(data = "Total Amount", amount = totalAmount.toString())
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(.5.dp, Color.Black)
+                )
+                Text(
+                    "Payment mode : " + if (bill.itemCollection.bill_pay_mode == "Pay by Cash") "Cash" else "Online",
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 5.dp)
+                )
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(.5.dp, Color.Black)
+                )
+                Text(
+                    "*" + bill.itemCollection.remarks,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 5.dp),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
     }
+}
+
+@Composable
+fun BillDetails(list: List<BillItemCollectionWithBillItems>, customerList:List<CustomerItem>) {
+
+    LazyColumn(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally){
+        items(list){bill ->
+            BillReceiptItem(bill = bill, customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0])
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+        item {
+            Spacer(modifier = Modifier.height(100.dp))
+        }
+    }
+
+
+
 }
 
 @Composable
@@ -254,15 +300,15 @@ fun BillItemWithAmountOnBill(index: Int, data: BillItem) {
         )
         Text(
             text = "₹${data.item_amount}",
-            modifier = Modifier.weight(.4f),
-            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(.4f).padding(end = 5.dp),
+            textAlign = TextAlign.End,
             fontSize = 12.sp
         )
     }
 }
 
 @Composable
-fun BillItemWithAmountOnBillBelow(data: String, amount: Double) {
+fun BillItemWithAmountOnBillBelow(data: String, amount: String) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = data,
@@ -280,9 +326,9 @@ fun BillItemWithAmountOnBillBelow(data: String, amount: Double) {
         )
         Text(
             text = "₹ $amount",
-            modifier = Modifier.weight(.4f),
-            textAlign = TextAlign.Center,
-            fontSize = 12.sp
+            modifier = Modifier.weight(.4f).padding(end = 5.dp),
+            textAlign = TextAlign.End,
+            fontSize = 12.sp,
         )
     }
 }

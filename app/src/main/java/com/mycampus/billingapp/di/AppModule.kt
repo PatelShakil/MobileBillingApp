@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.room.Room
 import com.mycampus.billingapp.data.bluetooth.AndroidBluetoothController
 import com.mycampus.billingapp.data.repo.BillRepository
+import com.mycampus.billingapp.data.repo.CustomerRepository
 import com.mycampus.billingapp.data.repo.UserRepository
 import com.mycampus.billingapp.data.room.AppDatabase
 import com.mycampus.billingapp.data.room.RoomDao
@@ -32,6 +33,11 @@ object AppModule {
     @Provides
     fun provideBillRepository(billingDao:RoomDao): BillRepository {
         return BillRepository(billingDao)
+    }
+
+    @Provides
+    fun provideCustomerRepository(billingDao: RoomDao):CustomerRepository{
+        return CustomerRepository(billingDao)
     }
 
     @Provides

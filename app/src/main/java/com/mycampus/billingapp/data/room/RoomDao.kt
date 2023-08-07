@@ -27,6 +27,9 @@ interface RoomDao {
     @Insert
     suspend fun insertBillItemCollection(billItemCollection: BillItemCollection): Long
 
+    @Query("SELECT * FROM customer_item")
+    fun getAllCustomers():Flow<List<CustomerItem>>
+
     @Transaction
     @Query("SELECT * FROM billitemcol")
     fun getAllItemCollectionsWithBillItems(): Flow<List<BillItemCollectionWithBillItems>>
