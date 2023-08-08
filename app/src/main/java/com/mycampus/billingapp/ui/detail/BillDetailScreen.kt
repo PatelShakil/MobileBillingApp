@@ -147,6 +147,8 @@ fun BillDetailScreen(
                 Log.d("IsOnline", isOnline.toString())
                 Log.d("IsCash", isCash.toString())
 
+
+
                 if (isOnline) {
                     itemCol = itemColOg.filter {
                         Utils.convertLongToDate(
@@ -165,7 +167,7 @@ fun BillDetailScreen(
                                 it.itemCollection.bill_pay_mode == "Paid by Cash"
                     }
                 }
-                if (!isCash && !isOnline) {
+                if (!isCash && !isOnline || (isCash && isOnline)) {
                     itemCol = itemColOg.filter {
                         Utils.convertLongToDate(
                             it.itemCollection.creation_date,
