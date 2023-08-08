@@ -174,7 +174,7 @@ fun BillReceiptItem(bill : BillItemCollectionWithBillItems,customerItem: Custome
                         .fillMaxWidth()
                         .border(.5.dp, Color.Black)
                 )
-                Row(modifier = Modifier.fillMaxWidth()) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Item Name",
                         modifier = Modifier
@@ -191,8 +191,8 @@ fun BillReceiptItem(bill : BillItemCollectionWithBillItems,customerItem: Custome
                     )
                     Text(
                         text = "Amount",
-                        modifier = Modifier.weight(.4f),
-                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(.4f).padding(end = 5.dp),
+                        textAlign = TextAlign.End,
                         fontSize = 14.sp,
                         fontWeight = FontWeight(400)
                     )
