@@ -36,6 +36,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterEnd
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -56,6 +58,8 @@ import com.mycampus.billingapp.data.room.entities.CustomerItem
 import com.mycampus.billingapp.ui.customer.CustomerViewModel
 import com.mycampus.billingapp.ui.home.MainColor
 import com.mycampus.billingapp.ui.home.UserViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
 import kotlin.math.roundToInt
 
 
@@ -66,7 +70,14 @@ fun BillDetailScreen(
     navController: NavController
 ) {
     var isFilterClick by remember { mutableStateOf(false) }
-    var selectedDate by remember { mutableStateOf(Utils.convertLongToDate(System.currentTimeMillis(),"dd-MM-yyyy")) }
+    var selectedDate by remember {
+        mutableStateOf(
+            Utils.convertLongToDate(
+                System.currentTimeMillis(),
+                "dd-MM-yyyy"
+            )
+        )
+    }
     var itemCol by remember { mutableStateOf(listOf<BillItemCollectionWithBillItems>()) }
     var itemColOg by remember { mutableStateOf(listOf<BillItemCollectionWithBillItems>()) }
     viewModel.allItemCollections.observeForever {
@@ -86,17 +97,28 @@ fun BillDetailScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth(.95f),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = CenterVertically
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_filter), "",
-                modifier = Modifier
-                    .clickable {
-                        isFilterClick = !isFilterClick
-                    }
-                    .size(35.dp),
-                tint = MainColor,
+            Text(
+                SimpleDateFormat(
+                    "dd-MMMM-yyyy",
+                    Locale.getDefault()
+                ).format(SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).parse(selectedDate)),
+                modifier = Modifier.weight(.7f).padding(start = 5.dp),
+                style = MaterialTheme.typography.titleSmall
             )
+            Box(contentAlignment = CenterEnd) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_filter), "",
+                    modifier = Modifier
+                        .clickable {
+                            isFilterClick = !isFilterClick
+                        }
+                        .size(35.dp),
+                    tint = MainColor,
+                )
+            }
         }
 
 
@@ -107,9 +129,11 @@ fun BillDetailScreen(
                 itemCol,
                 customerCol
             )
-        }else{
-            Text("No Corresponding record found...",modifier = Modifier.fillMaxSize(),
-            textAlign = TextAlign.Center)
+        } else {
+            Text(
+                "No Corresponding record found...", modifier = Modifier.fillMaxSize(),
+                textAlign = TextAlign.Center
+            )
         }
     }
     if (isFilterClick) {
@@ -117,13 +141,13 @@ fun BillDetailScreen(
             isFilterClick = !isFilterClick
         },
             onConfirm = { date, isOnline, isCash ->
-                if(date.isNotEmpty()) {
+                if (date.isNotEmpty()) {
                     selectedDate = date
                 }
-                Log.d("IsOnline",isOnline.toString())
-                Log.d("IsCash",isCash.toString())
+                Log.d("IsOnline", isOnline.toString())
+                Log.d("IsCash", isCash.toString())
 
-                if(isOnline){
+                if (isOnline) {
                     itemCol = itemColOg.filter {
                         Utils.convertLongToDate(
                             it.itemCollection.creation_date,
@@ -132,13 +156,16 @@ fun BillDetailScreen(
                                 it.itemCollection.bill_pay_mode != "Paid by Cash"
                     }
                 }
-                if(isCash){
+                if (isCash) {
                     itemCol = itemColOg.filter {
-                        Utils.convertLongToDate(it.itemCollection.creation_date,"dd-MM-yyyy") == selectedDate &&
+                        Utils.convertLongToDate(
+                            it.itemCollection.creation_date,
+                            "dd-MM-yyyy"
+                        ) == selectedDate &&
                                 it.itemCollection.bill_pay_mode == "Paid by Cash"
                     }
                 }
-                if(!isCash && !isOnline) {
+                if (!isCash && !isOnline) {
                     itemCol = itemColOg.filter {
                         Utils.convertLongToDate(
                             it.itemCollection.creation_date,
@@ -158,9 +185,9 @@ fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> 
             usePlatformDefaultWidth = false
         )
     ) {
-        var date by remember{ mutableStateOf("") }
-        var isCash by remember{ mutableStateOf(false) }
-        var isOnline by remember{ mutableStateOf(false) }
+        var date by remember { mutableStateOf("") }
+        var isCash by remember { mutableStateOf(false) }
+        var isOnline by remember { mutableStateOf(false) }
         Card(modifier = Modifier.fillMaxWidth(.95f)) {
             Column(
                 modifier = Modifier
@@ -198,10 +225,16 @@ fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> 
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth(.95f)
                         ) {
-                            DatePickerDialogCustom(date = "", label = "Date", onDateSelect = { year,month,day ->
-                                date = "$day-$month-$year"
-                            })
-                            Row(modifier = Modifier.fillMaxWidth(.95f), verticalAlignment = Alignment.CenterVertically) {
+                            DatePickerDialogCustom(
+                                date = "",
+                                label = "Date",
+                                onDateSelect = { year, month, day ->
+                                    date = "$day-$month-$year"
+                                })
+                            Row(
+                                modifier = Modifier.fillMaxWidth(.95f),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text("Payment Mode : ")
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Checkbox(checked = isCash, onCheckedChange = {
@@ -217,9 +250,9 @@ fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> 
                                 }
                             }
                             Button(onClick = {
-                                onConfirm(date,isOnline,isCash)
+                                onConfirm(date, isOnline, isCash)
                                 onDismiss()
-                            },modifier = Modifier.fillMaxWidth(.8f)) {
+                            }, modifier = Modifier.fillMaxWidth(.8f)) {
                                 Text(text = "Apply")
                             }
                         }
@@ -231,7 +264,11 @@ fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> 
 }
 
 @Composable
-fun DatePickerDialogCustom(date: String, label: String, onDateSelect: (String,String,String) -> Unit) {
+fun DatePickerDialogCustom(
+    date: String,
+    label: String,
+    onDateSelect: (String, String, String) -> Unit
+) {
     var date by remember {
         mutableStateOf(date)
     }
@@ -274,13 +311,13 @@ fun DatePickerDialogCustom(date: String, label: String, onDateSelect: (String,St
             var monthUp = month.toString()
             var dayUp = day.toString()
 
-            if(month < 10)
-                monthUp = "0${month+1}"
+            if (month < 10)
+                monthUp = "0${month + 1}"
             if (day < 10)
                 dayUp = "0$day"
             date = "$dayUp-$monthUp-$year"
             isDatePickerShow = !isDatePickerShow
-            onDateSelect(year.toString(),monthUp,dayUp)
+            onDateSelect(year.toString(), monthUp, dayUp)
         }
         datePicker.show()
     }
@@ -354,7 +391,7 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                     .fillMaxWidth(.97f)
             ) {
                 Text(
-                    Utils.convertLongToDate(bill.itemCollection.creation_date, "dd-MMMM-yyyy"),
+                    Utils.convertLongToDate(bill.itemCollection.creation_date, "hh:mma dd-MMMM-yyyy"),
                     fontSize = 12.sp,
                     modifier = Modifier.padding(10.dp)
                 )
