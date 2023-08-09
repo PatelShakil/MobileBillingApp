@@ -1,6 +1,5 @@
 package com.mycampus.billingapp.ui.detail
 
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,10 +17,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.TextFieldDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -41,7 +39,6 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -52,6 +49,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.Utils
+import com.mycampus.billingapp.common.uicomponents.DatePickerDialogCustom
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.data.room.entities.CustomerItem
@@ -105,7 +103,9 @@ fun BillDetailScreen(
                     "dd-MMMM-yyyy",
                     Locale.getDefault()
                 ).format(SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).parse(selectedDate)),
-                modifier = Modifier.weight(.7f).padding(start = 5.dp),
+                modifier = Modifier
+                    .weight(.7f)
+                    .padding(start = 5.dp),
                 style = MaterialTheme.typography.titleSmall
             )
             Box(contentAlignment = CenterEnd) {
@@ -144,10 +144,6 @@ fun BillDetailScreen(
                 if (date.isNotEmpty()) {
                     selectedDate = date
                 }
-                Log.d("IsOnline", isOnline.toString())
-                Log.d("IsCash", isCash.toString())
-
-
 
                 if (isOnline) {
                     itemCol = itemColOg.filter {
@@ -265,71 +261,14 @@ fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> 
     }
 }
 
-@Composable
-fun DatePickerDialogCustom(
-    date: String,
-    label: String,
-    onDateSelect: (String, String, String) -> Unit
-) {
-    var date by remember {
-        mutableStateOf(date)
-    }
-    var isDatePickerShow by remember { mutableStateOf(false) }
-    androidx.compose.material.OutlinedTextField(value = date, onValueChange = {},
-        leadingIcon = {
-            Icon(
-                painterResource(id = R.drawable.ic_calendar), contentDescription = "",
-                tint = MainColor
-            )
-        },
-        label = { androidx.compose.material.Text("Date", color = MainColor) },
-        modifier = Modifier.fillMaxWidth(),
-        colors = TextFieldDefaults.outlinedTextFieldColors(
-            focusedBorderColor = MainColor
-        ),
-        trailingIcon = {
-            Box(
-                modifier = Modifier
-                    .size(25.dp)
-                    .clip(CircleShape)
-                    .border(.5.dp, MainColor, CircleShape)
-                    .clickable {
-                        isDatePickerShow = !isDatePickerShow
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit, "",
-                    tint = MainColor,
-                    modifier = Modifier
-                        .size(17.dp)
-                )
-            }
-        }
-    )
-    if (isDatePickerShow) {
-        val datePicker = android.app.DatePickerDialog(LocalContext.current)
-        datePicker.setOnDateSetListener { datePicker, year, month, day ->
-            var monthUp = month.toString()
-            var dayUp = day.toString()
-
-            if (month < 10)
-                monthUp = "0${month + 1}"
-            if (day < 10)
-                dayUp = "0$day"
-            date = "$dayUp-$monthUp-$year"
-            isDatePickerShow = !isDatePickerShow
-            onDateSelect(year.toString(), monthUp, dayUp)
-        }
-        datePicker.show()
-    }
-}
 
 @Composable
 fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: CustomerItem) {
     Card(
-        modifier = Modifier.fillMaxWidth(.97f),
-        border = BorderStroke(.5.dp, Color.Gray),
+        modifier = Modifier
+            .fillMaxWidth(.97f)
+            .background(Color.Transparent),
+        border = BorderStroke(1.dp, Color.Gray),
         elevation = CardDefaults.cardElevation(18.dp)
     ) {
         Column(
@@ -349,11 +288,12 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                         fontSize = 14.sp
                     )
                     Text(
-                        customerItem.name,
+                        "Name : " + customerItem.name,
                         fontSize = 12.sp
                     )
                     Text(
-                        customerItem.mobile,
+                        "Mobile : " +
+                                customerItem.mobile,
                         fontSize = 12.sp
                     )
                 }
@@ -366,11 +306,13 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                         fontSize = 14.sp
                     )
                     Text(
-                        bill.itemCollection.bill_no,
+                        "Bill No : " +
+                                bill.itemCollection.bill_no,
                         fontSize = 12.sp
                     )
                     Text(
-                        bill.itemCollection.created_by,
+                        "Created By : " +
+                                bill.itemCollection.created_by,
                         fontSize = 12.sp
                     )
                 }
@@ -389,18 +331,22 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
             Spacer(modifier = Modifier.height(5.dp))
             Column(
                 modifier = Modifier
-                    .border(.7.dp, Color.Black)
+                    .border(1.dp, Color.Gray)
                     .fillMaxWidth(.97f)
             ) {
                 Text(
-                    Utils.convertLongToDate(bill.itemCollection.creation_date, "hh:mma dd-MMMM-yyyy"),
+                    "Bill at : " + Utils.convertLongToDate(
+                        bill.itemCollection.creation_date,
+                        "dd-MMMM-yyyy hh:mma"
+                    ),
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier.padding(5.dp),
+                    color = Color.Black
                 )
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(.5.dp, Color.Black)
+                        .border(1.dp, Color.Gray)
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -418,7 +364,7 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                         modifier = Modifier
                             .width(1.dp)
                             .height(35.dp)
-                            .border(.5.dp, Color.Black)
+                            .border(1.dp, Color.Gray)
                     )
                     Text(
                         text = "Amount",
@@ -434,14 +380,14 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(.5.dp, Color.Black)
+                        .border(1.dp, Color.Gray)
                 )
                 bill.itemList.forEachIndexed() { index, billItem ->
                     BillItemWithAmountOnBill(index = index + 1, data = billItem)
                     Divider(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(.5.dp, Color.Black)
+                            .border(1.dp, Color.Gray)
                     )
                 }
                 val totalAmount = bill.itemList.sumOf {
@@ -454,16 +400,16 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(.5.dp, Color.Black)
+                        .border(1.dp, Color.Gray)
                 )
                 BillItemWithAmountOnBillBelow(
                     data = "Tax",
-                    amount = ((totalAmount * bill.itemCollection.tax) / 100).toString() + "*${bill.itemCollection.tax.roundToInt()}%"
+                    amount = ((totalAmount * bill.itemCollection.tax) / 100).toString() + " ( @ ${bill.itemCollection.tax.roundToInt()}% )"
                 )
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(.5.dp, Color.Black)
+                        .border(1.dp, Color.Gray)
                 )
                 BillItemWithAmountOnBillBelow(
                     data = "Discount",
@@ -472,7 +418,7 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(.5.dp, Color.Black)
+                        .border(1.dp, Color.Gray)
                 )
                 BillItemWithAmountOnBillBelow(
                     data = "Total Amount",
@@ -481,7 +427,7 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(.5.dp, Color.Black)
+                        .border(1.dp, Color.Gray)
                 )
                 Text(
                     "Payment mode : " + if (bill.itemCollection.bill_pay_mode.trim() == "Paid by Cash") "Cash" else "Online",
@@ -491,7 +437,7 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(.5.dp, Color.Black)
+                        .border(1.dp, Color.Gray)
                 )
                 Text(
                     "*" + bill.itemCollection.remarks,
@@ -499,6 +445,56 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                     modifier = Modifier.padding(start = 5.dp),
                     style = MaterialTheme.typography.bodySmall
                 )
+            }
+            Spacer(modifier = Modifier.height(5.dp))
+
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 5.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End
+        ) {
+
+            Box(
+                modifier = Modifier
+                    .background(MainColor, RoundedCornerShape(15.dp))
+                    .clip(RoundedCornerShape(15.dp))
+                    .clickable {},
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    Icon(
+                        painterResource(id = R.drawable.ic_printer), "",
+                        tint = Color.White
+                    )
+//                    Text("Print", color = Color.White)
+                }
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Box(
+                modifier = Modifier
+                    .background(MainColor, RoundedCornerShape(15.dp))
+                    .clip(RoundedCornerShape(15.dp))
+                    .clickable {
+                               onDelete(bill)
+                    },
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    Icon(
+                        Icons.Default.Delete, "",
+                        tint = Color.White
+                    )
+//                    Text("Delete", color = Color.White)
+                }
             }
         }
     }
@@ -540,7 +536,7 @@ fun BillItemWithAmountOnBill(index: Int, data: BillItem) {
             modifier = Modifier
                 .width(1.dp)
                 .height(30.dp)
-                .border(.5.dp, Color.Black)
+                .border(2.dp, Color.Gray)
         )
         Text(
             text = "₹${data.item_amount}",
@@ -568,7 +564,7 @@ fun BillItemWithAmountOnBillBelow(data: String, amount: String) {
             modifier = Modifier
                 .width(1.dp)
                 .height(30.dp)
-                .border(.5.dp, Color.Black)
+                .border(2.dp, Color.Gray)
         )
         Text(
             text = "₹ $amount",

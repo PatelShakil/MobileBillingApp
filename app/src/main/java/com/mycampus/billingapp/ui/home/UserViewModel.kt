@@ -4,15 +4,15 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import com.mycampus.billingapp.data.room.entities.BillItem
-import com.mycampus.billingapp.data.room.entities.BillItemCollection
-import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.data.repo.BillRepository
 import com.mycampus.billingapp.data.repo.CustomerRepository
 import com.mycampus.billingapp.data.repo.UserRepository
-import com.mycampus.billingapp.data.room.entities.CustomerItem
+import com.mycampus.billingapp.data.room.entities.BillItem
+import com.mycampus.billingapp.data.room.entities.BillItemCollection
+import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -36,9 +36,20 @@ private val customerRepository: CustomerRepository
 
 
 
+    var insertResult = MutableStateFlow<Boolean>(false)
+    var isInserted = MutableStateFlow<Boolean>(false)
     fun addItemCollection(billItemCollection: BillItemCollection, feeItems: List<BillItem>) {
+        insertResult.value = true
         viewModelScope.launch {
-            billingRepository.addItemCollectionWithFeeItems(billItemCollection, feeItems)
+            isInserted.value = billingRepository.addItemCollectionWithFeeItems(billItemCollection, feeItems)
+            insertResult.value = false
+        }
+    }
+
+    var deleteResult = MutableStateFlow<Boolean>(false)
+    fun deleteBillItemCol(itemCollection: BillItemCollection){
+        viewModelScope.launch {
+            deleteResult.value = billingRepository.deleteBillItemCol(itemCollection)
         }
     }
 }

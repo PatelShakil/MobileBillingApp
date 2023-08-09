@@ -23,6 +23,8 @@ interface RoomDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBillItem(item : BillItem)
+    @Query("DELETE FROM billitemcol WHERE id = $item")
+    suspend fun deleteBillItemCol(itemCol: BillItemCollection)
 
     @Insert
     suspend fun insertBillItemCollection(billItemCollection: BillItemCollection): Long

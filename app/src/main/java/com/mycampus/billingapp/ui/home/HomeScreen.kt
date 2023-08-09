@@ -52,8 +52,10 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.Utils
+import com.mycampus.billingapp.common.uicomponents.ConfirmationDialog
 import com.mycampus.billingapp.common.uicomponents.CusDropdown
 import com.mycampus.billingapp.common.uicomponents.DropDownItemData
+import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
@@ -190,8 +192,21 @@ fun HomeScreen(
                 Log.d("billCol", billCol.toString())
                 Log.d("BillItemList", list.toString())
                 viewModel.addItemCollection(billCol, list)
-            }){
+                }){
                 customerViewModel.addCustomer(it)
+            }
+            var insertResult = viewModel.insertResult.collectAsState()
+            if(insertResult.value){
+                ProgressBarCus(){
+                }
+            }
+            val isInserted = viewModel.isInserted.collectAsState()
+            if(isInserted.value){
+                ConfirmationDialog(onDismiss = {
+                    viewModel.isInserted.value = false
+                }) {
+                    //on print
+                }
             }
 
             if (itemCol.isNotEmpty()) {
