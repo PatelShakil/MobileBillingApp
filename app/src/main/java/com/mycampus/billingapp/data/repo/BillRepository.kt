@@ -40,4 +40,13 @@ class BillRepository @Inject constructor(
             false
         }
     }
+    suspend fun deleteBillItem(item: BillItem):Boolean{
+        return try {
+            billingDao.deleteBillItem(item)
+            true
+        }catch (e : Exception){
+            Log.d("Delete Exception",e.localizedMessage)
+            false
+        }
+    }
 }

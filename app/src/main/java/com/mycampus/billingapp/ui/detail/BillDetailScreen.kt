@@ -29,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +51,8 @@ import androidx.navigation.NavController
 import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.Utils
 import com.mycampus.billingapp.common.uicomponents.DatePickerDialogCustom
+import com.mycampus.billingapp.common.uicomponents.ErrorMessage
+import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.data.room.entities.CustomerItem
@@ -128,12 +131,17 @@ fun BillDetailScreen(
             BillDetails(
                 itemCol,
                 customerCol
-            )
+            ){
+                viewModel.deleteBillItemCol(it)
+            }
         } else {
-            Text(
-                "No Corresponding record found...", modifier = Modifier.fillMaxSize(),
-                textAlign = TextAlign.Center
-            )
+            ErrorMessage(msg = "No Corresponding record found...")
+        }
+        val deleteProgress = viewModel.deleteProcess.collectAsState()
+        if(deleteProgress.value){
+            ProgressBarCus {
+                //onDismiss
+            }
         }
     }
     if (isFilterClick) {
@@ -263,7 +271,7 @@ fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> 
 
 
 @Composable
-fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: CustomerItem) {
+fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: CustomerItem,onBillDelete:(BillItemCollectionWithBillItems)->Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth(.97f)
@@ -422,7 +430,7 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                 )
                 BillItemWithAmountOnBillBelow(
                     data = "Total Amount",
-                    amount = totalAmount.toString()
+                    amount = (totalAmount + ((totalAmount * bill.itemCollection.tax) / 100) - bill.itemCollection.discount).toString()
                 )
                 Divider(
                     modifier = Modifier
@@ -447,53 +455,52 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                 )
             }
             Spacer(modifier = Modifier.height(5.dp))
-
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 5.dp, vertical = 5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End
-        ) {
-
-            Box(
+            Row(
                 modifier = Modifier
-                    .background(MainColor, RoundedCornerShape(15.dp))
-                    .clip(RoundedCornerShape(15.dp))
-                    .clickable {},
+                    .fillMaxWidth()
+                    .padding(horizontal = 5.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
 
-                    Icon(
-                        painterResource(id = R.drawable.ic_printer), "",
-                        tint = Color.White
-                    )
+                Box(
+                    modifier = Modifier
+                        .background(MainColor, RoundedCornerShape(15.dp))
+                        .clip(RoundedCornerShape(15.dp))
+                        .clickable {},
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        Icon(
+                            painterResource(id = R.drawable.ic_printer), "",
+                            tint = Color.White
+                        )
 //                    Text("Print", color = Color.White)
+                    }
                 }
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Box(
-                modifier = Modifier
-                    .background(MainColor, RoundedCornerShape(15.dp))
-                    .clip(RoundedCornerShape(15.dp))
-                    .clickable {
-                               onDelete(bill)
-                    },
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Spacer(modifier = Modifier.width(10.dp))
+                Box(
+                    modifier = Modifier
+                        .background(MainColor, RoundedCornerShape(15.dp))
+                        .clip(RoundedCornerShape(15.dp))
+                        .clickable {
+                            onBillDelete(bill)
+                        },
                 ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
 
-                    Icon(
-                        Icons.Default.Delete, "",
-                        tint = Color.White
-                    )
+                        Icon(
+                            Icons.Default.Delete, "",
+                            tint = Color.White
+                        )
 //                    Text("Delete", color = Color.White)
+                    }
                 }
             }
         }
@@ -501,7 +508,7 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
 }
 
 @Composable
-fun BillDetails(list: List<BillItemCollectionWithBillItems>, customerList: List<CustomerItem>) {
+fun BillDetails(list: List<BillItemCollectionWithBillItems>, customerList: List<CustomerItem>,onBillDelete:(BillItemCollectionWithBillItems)->Unit) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -511,7 +518,9 @@ fun BillDetails(list: List<BillItemCollectionWithBillItems>, customerList: List<
             BillReceiptItem(
                 bill = bill,
                 customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0]
-            )
+            ){
+                onBillDelete(it)
+            }
             Spacer(modifier = Modifier.height(10.dp))
         }
         item {

@@ -18,9 +18,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,15 +32,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -47,25 +51,46 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import com.mycampus.billingapp.R
+import com.mycampus.billingapp.common.uicomponents.ErrorMessage
 import com.mycampus.billingapp.data.room.entities.CustomerItem
+import com.mycampus.billingapp.ui.home.LightMainColor
 import com.mycampus.billingapp.ui.home.MainColor
 
 @Composable
 fun CustomerScreen(viewModel : CustomerViewModel,navController: NavController) {
     var isAddCustomer by remember{ mutableStateOf(false) }
     var customerCol by remember{ mutableStateOf(listOf<CustomerItem>()) }
+    var customerColOg by remember{ mutableStateOf(listOf<CustomerItem>()) }
     viewModel.allCustomers.observeForever {
-        customerCol = it
+        customerColOg = it
+        customerCol = customerColOg
     }
     Box(modifier = Modifier.fillMaxSize()) {
 
-        LazyColumn(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally){
-            item {
-                Spacer(modifier = Modifier.height(5.dp))
-            }
-            items(customerCol){
-                CustomerItemSample(customer = it)
-                Spacer(modifier = Modifier.height(5.dp))
+        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(modifier = Modifier.height(5.dp))
+            SearchBar(onTextChanged = {value ->
+                customerCol = if(value.isNotEmpty())
+                    customerColOg.filter { it.name.lowercase().contains(value.lowercase()) }
+                else
+                    customerColOg
+            })
+            Spacer(modifier = Modifier.height(5.dp))
+            if(customerCol.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    item {
+                        Spacer(modifier = Modifier.height(5.dp))
+                    }
+                    items(customerCol) {
+                        CustomerItemSample(customer = it)
+                        Spacer(modifier = Modifier.height(5.dp))
+                    }
+                }
+            }else{
+                ErrorMessage(msg = "No Corresponding record found...")
             }
         }
         FloatingActionButton(
@@ -92,6 +117,32 @@ fun CustomerScreen(viewModel : CustomerViewModel,navController: NavController) {
 }
 
 @Composable
+fun SearchBar(onTextChanged: (String) -> Unit) {
+    var value by remember{ mutableStateOf("") }
+    Card(modifier = Modifier.fillMaxWidth(.9f),
+    border = BorderStroke(.5.dp, Color.Gray),
+        elevation = CardDefaults.cardElevation(
+            18.dp
+        )
+    ){
+        TextField(value = value, onValueChange = {
+            value = it
+            onTextChanged(value)
+        },
+        trailingIcon = {
+            Icon(Icons.Default.Search, contentDescription = "",
+            tint = MainColor)
+        },
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.textFieldColors(
+            focusedIndicatorColor = Color.Transparent,
+            backgroundColor = LightMainColor,
+            cursorColor = MainColor
+        ))
+    }
+
+}
+@Composable
 fun CustomerItemSample(customer: CustomerItem) {
     Card(modifier = Modifier.fillMaxWidth(.95f),
     border = BorderStroke(.5.dp, Color.Gray),
@@ -106,28 +157,41 @@ fun CustomerItemSample(customer: CustomerItem) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(painterResource(id = R.drawable.customer_service), contentDescription = "",
-            modifier = Modifier.size(30.dp))
+            modifier = Modifier.size(40.dp))
             Column() {
 
                 Text(
                     text = customer.name,
-                    modifier = Modifier.padding(start = 10.dp),
+                    modifier = Modifier.padding(start = 5.dp),
                     fontSize = 16.sp,
                     style = MaterialTheme.typography.titleSmall
                 )
                 Text(
-                    text = customer.mobile + " | " + customer.email,
+                    text = "Phone No. : " + customer.mobile,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(start = 5.dp)
                 )
-            }
+                Text(
+                    text = "Email : " + customer.email,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(start = 5.dp)
+                )
+                Text(
+                    text = buildAnnotatedString {
+                        append("Address: " + customer.address)
+                    },
+                    style = TextStyle(
+                        fontSize = 13.sp,
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 5.dp,end = 5.dp)
+                        .background(Color.White), // Just for visualization, to see the boundaries of the Text composable
+                    softWrap = true,
+                    maxLines = Int.MAX_VALUE // Allow unlimited lines
+                )            }
 
             }
-            Text(
-                    text = customer.address,
-            fontSize = 13.sp,
-                modifier = Modifier.padding(start = 5.dp)
-            )
         }
     }
 

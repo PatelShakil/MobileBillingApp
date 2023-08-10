@@ -1,6 +1,7 @@
 package com.mycampus.billingapp.data.room
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -23,8 +24,11 @@ interface RoomDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBillItem(item : BillItem)
-    @Query("DELETE FROM billitemcol WHERE id = $item")
+    @Delete
     suspend fun deleteBillItemCol(itemCol: BillItemCollection)
+
+    @Delete
+    suspend fun deleteBillItem(item: BillItem)
 
     @Insert
     suspend fun insertBillItemCollection(billItemCollection: BillItemCollection): Long

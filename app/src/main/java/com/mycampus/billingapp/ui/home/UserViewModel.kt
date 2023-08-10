@@ -47,9 +47,25 @@ private val customerRepository: CustomerRepository
     }
 
     var deleteResult = MutableStateFlow<Boolean>(false)
-    fun deleteBillItemCol(itemCollection: BillItemCollection){
+    var deleteProcess = MutableStateFlow<Boolean>(false)
+    fun deleteBillItemCol(itemCollection: BillItemCollectionWithBillItems){
+        deleteProcess.value = true
         viewModelScope.launch {
-            deleteResult.value = billingRepository.deleteBillItemCol(itemCollection)
+            deleteResult.value = try{
+                itemCollection.itemList.forEach {
+                    deleteBillItem(it)
+                }
+                billingRepository.deleteBillItemCol(itemCollection.itemCollection)
+            }catch(e : Exception){
+                e.printStackTrace()
+                false
+            }
+            deleteProcess.value = false
+        }
+    }
+    private fun deleteBillItem(item: BillItem){
+        viewModelScope.launch {
+            deleteResult.value = billingRepository.deleteBillItem(item)
         }
     }
 }

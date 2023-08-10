@@ -53,7 +53,8 @@ import coil.compose.rememberAsyncImagePainter
 import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.Utils
 import com.mycampus.billingapp.common.uicomponents.ConfirmationDialog
-import com.mycampus.billingapp.common.uicomponents.CusDropdown
+import com.mycampus.billingapp.common.uicomponents.CusDropdownSearch
+import com.mycampus.billingapp.common.uicomponents.DateTimePicker
 import com.mycampus.billingapp.common.uicomponents.DropDownItemData
 import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
 import com.mycampus.billingapp.data.models.UserDetails
@@ -66,6 +67,8 @@ import com.mycampus.billingapp.ui.customer.AddCustomerPopupScreen
 import com.mycampus.billingapp.ui.customer.CustomerViewModel
 import com.mycampus.billingapp.ui.nav.Screen
 import com.mycampus.billingapp.ui.theme.spacing
+import java.time.LocalDateTime
+import java.time.ZoneId
 import kotlin.math.roundToInt
 
 //import androidx.navigation.NavController
@@ -637,6 +640,8 @@ fun MainScreenFees(
         }
         val feeDataList = mutableListOf<CollectFeeData>()
         var remarks by remember{mutableStateOf("")}
+        val dateTime = LocalDateTime.now()
+        var selectedDateTime = remember{ mutableStateOf(dateTime) }
 //        val listOfFinalData = mutableListOf<OtherItemsInfo>()
         Column(
             modifier = Modifier
@@ -689,12 +694,14 @@ fun MainScreenFees(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(.8f)) {
-                    CusDropdown(
+                    CusDropdownSearch(
                         label = "Customer",
-                        options = customersList.map { DropDownItemData(it.id.toString(), it.name) },
+                        options = customersList.map { DropDownItemData(it.id.toString(), it.name) }.sortedBy { it.name },
                         onSelected = {
                             customerid = it.id
-                        })
+                        }){
+                        isCustomerAdd = !isCustomerAdd
+                    }
                 }
 
                 Spacer(Modifier.width(10.dp))
@@ -843,6 +850,19 @@ fun MainScreenFees(
                     backgroundColor = Transparent,
                     focusedIndicatorColor = MainColor
                 ))
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                )
+                DateTimePicker(
+                    "Date and Time",
+                    "Select Date and Time",
+                    selectedDateTime = selectedDateTime,
+                    onDateTimeSelected = {
+                        selectedDateTime.value = it
+                    }
+                )
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1082,7 +1102,7 @@ fun MainScreenFees(
                                 0.0,
                                 discountAmount,
                                 remarks,
-                                System.currentTimeMillis(),
+                                selectedDateTime.value.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                                 userDetails.name,
                                 false
                             )
