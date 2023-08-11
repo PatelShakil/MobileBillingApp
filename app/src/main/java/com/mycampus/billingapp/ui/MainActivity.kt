@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.mycampus.billingapp.ui.detail.getPermissions
 import com.mycampus.billingapp.ui.nav.AppNavigation
 import com.mycampus.billingapp.ui.theme.BiilingappTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             permissionLauncher.launch(
+                getPermissions() +
                 arrayOf(
                     Manifest.permission.BLUETOOTH_SCAN,
                     Manifest.permission.BLUETOOTH_CONNECT,

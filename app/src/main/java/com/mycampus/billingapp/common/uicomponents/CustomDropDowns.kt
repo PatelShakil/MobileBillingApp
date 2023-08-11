@@ -221,7 +221,7 @@ fun CusDropdownSearch(
                 }
             }
         }
-        if(filteredOptions.isEmpty()){
+        if(filteredOptions.isEmpty() && searchText.isNotEmpty()){
             Card(
                 modifier = Modifier
                     .fillMaxWidth()

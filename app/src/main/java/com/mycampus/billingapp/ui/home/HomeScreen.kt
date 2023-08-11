@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.BottomEnd
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.TopEnd
@@ -108,8 +109,7 @@ fun HomeScreen(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
         ) {
-            /*
-            StudentInfoCard(
+            /*StudentInfoCard(
                 admissionType = "abc1234",
                 studentDBuid = "123455",
                 classid = "2",
@@ -129,10 +129,14 @@ fun HomeScreen(
                 staffward = false,
                 singlegirlchild = false,
                 true,
+                true,
                 rollNo = 3,
                 feeAccountNo = 12345678,
                 onClick = { *//*TODO*//* })
             Spacer(modifier = Modifier.height(10.dp))
+            */
+
+            /*
             StudentInfoCard(
                 admissionType = "abc1234",
                 studentDBuid = "123455",
@@ -265,7 +269,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :String,classname :String, sectionid: String,sectionName :String, name: String, fathername: String, schoolAdmissionNo: String, contactNo: String, gender: String, imageURL:String, navController: NavController,ews:Boolean, rte:Boolean, pwd:Boolean, staffward:Boolean, singlegirlchild:Boolean,isVehileEnabled : Boolean, rollNo : Int,feeAccountNo : Int, onClick: () -> Unit,isAdminSection: Boolean=true) {
+fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :String,classname :String, sectionid: String,sectionName :String, name: String, fathername: String, schoolAdmissionNo: String, contactNo: String, gender: String, imageURL:String, navController: NavController,ews:Boolean, rte:Boolean, pwd:Boolean, staffward:Boolean, singlegirlchild:Boolean,isVehileEnabled : Boolean, isNA : Boolean,rollNo : Int,feeAccountNo : Int, onClick: () -> Unit,isAdminSection: Boolean=true) {
     var counter=0
     val painter= rememberAsyncImagePainter(model = imageURL)
     val spacing = MaterialTheme.spacing
@@ -432,7 +436,6 @@ fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :Strin
                                                                 newVal
                                                             )
                                                         navController.navigate("feeinfo/${studentDBuid}/${classid}/${classname}/${sectionid}/${sectionName}/${name}/${formattedAdmNo}/${contactNo}/${feeAccountNo}")
-
                                                     }
                                                 }
                                         ) {
@@ -516,6 +519,30 @@ fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :Strin
                         color = if(gender.lowercase() == "male") Color.Black
                         else Color.White,
                         textAlign = TextAlign.Center
+                    )
+                }
+            }
+            if(isNA){
+                Box(
+                    contentAlignment = Center,
+                    modifier = Modifier.align(BottomEnd)
+                ) {
+                    Image(
+                        painter = painterResource(
+                            id = if (gender.lowercase() == "male") R.drawable.quarter_circle_male_na
+                            else R.drawable.quarter_circle_female_na
+                        ),
+                        "",
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Text(
+                        text = "NA",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Black,
+                        color = if(gender.lowercase() == "male") Color.Black
+                        else Color.White,
+                        textAlign = TextAlign.Center,
+                        fontSize = 12.sp
                     )
                 }
             }
@@ -1102,6 +1129,7 @@ fun MainScreenFees(
                                 0.0,
                                 discountAmount,
                                 remarks,
+                                System.currentTimeMillis(),
                                 selectedDateTime.value.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                                 userDetails.name,
                                 false

@@ -1,6 +1,12 @@
 package com.mycampus.billingapp.ui.detail
 
+import android.Manifest
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.os.Build
+import android.widget.ScrollView
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,11 +47,15 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
@@ -53,12 +64,15 @@ import com.mycampus.billingapp.common.Utils
 import com.mycampus.billingapp.common.uicomponents.DatePickerDialogCustom
 import com.mycampus.billingapp.common.uicomponents.ErrorMessage
 import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
+import com.mycampus.billingapp.data.models.BillItemCollectionPrint
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.data.room.entities.CustomerItem
 import com.mycampus.billingapp.ui.customer.CustomerViewModel
 import com.mycampus.billingapp.ui.home.MainColor
 import com.mycampus.billingapp.ui.home.UserViewModel
+import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -271,7 +285,7 @@ fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> 
 
 
 @Composable
-fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: CustomerItem,onBillDelete:(BillItemCollectionWithBillItems)->Unit) {
+fun BillReceiptItem(isPrint : Boolean = true,bill: BillItemCollectionWithBillItems, customerItem: CustomerItem,onBillDelete:(BillItemCollectionWithBillItems)->Unit,onPdfClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth(.97f)
@@ -455,53 +469,107 @@ fun BillReceiptItem(bill: BillItemCollectionWithBillItems, customerItem: Custome
                 )
             }
             Spacer(modifier = Modifier.height(5.dp))
+            if(isPrint){
+                BillReceiptButtonRow(
+                    bill = bill,
+                    customerItem = customerItem,
+                    onBillDelete =onBillDelete,
+                    onPdfClick = {
+
+                    },
+                    onPrintClick = {}
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun BillReceiptButtonRow(bill : BillItemCollectionWithBillItems,customerItem : CustomerItem,onBillDelete : (BillItemCollectionWithBillItems)->Unit,onPdfClick:()->Unit,onPrintClick:(BillItemCollectionPrint)->Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 5.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+
+        Box(
+            modifier = Modifier
+                .background(MainColor, RoundedCornerShape(15.dp))
+                .clip(RoundedCornerShape(15.dp))
+                .clickable {
+                    onPdfClick()
+                },
+        ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 5.dp, vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
 
-                Box(
-                    modifier = Modifier
-                        .background(MainColor, RoundedCornerShape(15.dp))
-                        .clip(RoundedCornerShape(15.dp))
-                        .clickable {},
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-
-                        Icon(
-                            painterResource(id = R.drawable.ic_printer), "",
-                            tint = Color.White
-                        )
+                Icon(
+                    painterResource(id = R.drawable.ic_pdf), "",
+                    tint = Color.White
+                )
 //                    Text("Print", color = Color.White)
-                    }
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Box(
-                    modifier = Modifier
-                        .background(MainColor, RoundedCornerShape(15.dp))
-                        .clip(RoundedCornerShape(15.dp))
-                        .clickable {
-                            onBillDelete(bill)
-                        },
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+            }
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Box(
+            modifier = Modifier
+                .background(MainColor, RoundedCornerShape(15.dp))
+                .clip(RoundedCornerShape(15.dp))
+                .clickable {
+                    val billPrint = BillItemCollectionPrint(
+                        bill.itemCollection.id,
+                        customerItem,
+                        bill.itemCollection.bill_no,
+                        bill.itemCollection.bill_pay_mode,
+                        bill.itemCollection.tax,
+                        bill.itemCollection.total_amount,
+                        bill.itemCollection.paid_amount,
+                        bill.itemCollection.balance_amount,
+                        bill.itemCollection.discount,
+                        bill.itemCollection.remarks,
+                        bill.itemCollection.creation_date,
+                        bill.itemCollection.created_by,
+                        bill.itemList,
+                        bill.itemCollection.is_sync
+                    )
+                    onPrintClick(billPrint)
+                },
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
 
-                        Icon(
-                            Icons.Default.Delete, "",
-                            tint = Color.White
-                        )
+                Icon(
+                    painterResource(id = R.drawable.ic_printer), "",
+                    tint = Color.White
+                )
+//                    Text("Print", color = Color.White)
+            }
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Box(
+            modifier = Modifier
+                .background(MainColor, RoundedCornerShape(15.dp))
+                .clip(RoundedCornerShape(15.dp))
+                .clickable {
+                    onBillDelete(bill)
+                },
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Icon(
+                    Icons.Default.Delete, "",
+                    tint = Color.White
+                )
 //                    Text("Delete", color = Color.White)
-                    }
-                }
             }
         }
     }
@@ -514,12 +582,37 @@ fun BillDetails(list: List<BillItemCollectionWithBillItems>, customerList: List<
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        lateinit var bit: MutableState<Bitmap>
         items(list) { bill ->
-            BillReceiptItem(
+            var isBit by remember{ mutableStateOf(false) }
+
+            val context = LocalContext.current
+            ScrollableCapturable(controller = rememberCaptureController(), onCaptured = {bitmap, throwable ->
+                    if (bitmap != null) {
+                        bit.value = bitmap
+                        isBit = true
+//                        saveFile(customerList.filter { it.id == bill.itemCollection.customerid }[0].name + bill.itemCollection.bill_no + ".pdf" ,bitmap)
+                    }
+            } ) {
+                BillReceiptItem(
                 bill = bill,
                 customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0]
-            ){
-                onBillDelete(it)
+                , onBillDelete = {
+                    onBillDelete(it)
+                }){
+
+                }
+//                BillReceiptItem(
+//                    bill = bill,
+//                    customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0]
+//                    , onBillDelete = {
+//                    }){
+//                }
+            }
+            if(isBit) {
+                Dialog(onDismissRequest = { /*TODO*/ }) {
+                    Image(bitmap = bit.value.asImageBitmap(), contentDescription = "")
+                }
             }
             Spacer(modifier = Modifier.height(10.dp))
         }
@@ -530,7 +623,104 @@ fun BillDetails(list: List<BillItemCollectionWithBillItems>, customerList: List<
 
 
 }
+fun saveBitmapToFile(bitmap: Bitmap, file: File) {
+    try {
+        val fos = FileOutputStream(file)
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+        fos.close()
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+fun saveFile(filename: String,bitmap : Bitmap) {
+    val storageDir = File("/storage/emulated/0/Download/myCampus")
+    val file = File(filename)
+    if(storageDir.exists())
+        storageDir.mkdirs()
+    if(file.exists())
+        file.createNewFile()
+    saveBitmapToFile(bitmap,file)
+}
 
+//        implementation "dev.shreyaspatil:capturable:1.0.3"
+
+fun getPermissions():Array<String>{
+    return if(Build.VERSION.SDK_INT >= 33){
+        arrayOf(Manifest.permission.READ_MEDIA_AUDIO,Manifest.permission.READ_MEDIA_IMAGES,Manifest.permission.READ_MEDIA_VIDEO)
+    }else{
+        arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    }
+}
+@Composable
+fun ScrollableCapturable(
+    modifier: Modifier = Modifier,
+    controller: CaptureController,
+    onCaptured: (Bitmap?, Throwable?) -> Unit,
+    content: @Composable () -> Unit
+) {
+    AndroidView(
+        factory = { context ->
+            val scrollView = ScrollView(context)
+            val composeView = ComposeView(context).apply {
+                setContent {
+                    content()
+                }
+            }
+            scrollView.addView(composeView)
+            scrollView
+        },
+        update = { scrollView ->
+            if (controller.readyForCapture) {
+                // Hide scrollbars for capture
+                scrollView.isVerticalScrollBarEnabled = false
+                scrollView.isHorizontalScrollBarEnabled = false
+                try {
+                    val bitmap = loadBitmapFromScrollView(scrollView)
+                    onCaptured(bitmap, null)
+                } catch (throwable: Throwable) {
+                    onCaptured(null, throwable)
+                }
+                scrollView.isVerticalScrollBarEnabled = true
+                scrollView.isHorizontalScrollBarEnabled = true
+                controller.captured()
+            }
+        },
+        modifier = modifier
+    )
+}
+
+/**
+ * Need to use view.getChildAt(0).height instead of just view.height,
+ * so you can get all ScrollView content.
+ */
+private fun loadBitmapFromScrollView(scrollView: ScrollView): Bitmap {
+    val bitmap = Bitmap.createBitmap(
+        scrollView.width,
+        scrollView.getChildAt(0).height,
+        Bitmap.Config.ARGB_8888
+    )
+    val canvas = Canvas(bitmap)
+    scrollView.draw(canvas)
+    return bitmap
+}
+
+class CaptureController {
+    var readyForCapture by mutableStateOf(false)
+        private set
+
+    fun capture() {
+        readyForCapture = true
+    }
+
+    internal fun captured() {
+        readyForCapture = false
+    }
+}
+
+@Composable
+fun rememberCaptureController(): CaptureController {
+    return remember { CaptureController() }
+}
 @Composable
 fun BillItemWithAmountOnBill(index: Int, data: BillItem) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

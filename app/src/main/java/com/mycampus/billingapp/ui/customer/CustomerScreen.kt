@@ -90,7 +90,10 @@ fun CustomerScreen(viewModel : CustomerViewModel,navController: NavController) {
                     }
                 }
             }else{
-                ErrorMessage(msg = "No Corresponding record found...")
+                if(customerColOg.isNotEmpty())
+                    ErrorMessage(msg = "No Corresponding record found...")
+                else
+                    ErrorMessage(msg = "No Data found...")
             }
         }
         FloatingActionButton(

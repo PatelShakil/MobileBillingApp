@@ -19,6 +19,7 @@ data class BillItemCollection(
     var discount : Double,
     var remarks : String,
     var creation_date : Long,
+    var bill_date : Long,
     var created_by : String,
     var is_sync :Boolean
 )
