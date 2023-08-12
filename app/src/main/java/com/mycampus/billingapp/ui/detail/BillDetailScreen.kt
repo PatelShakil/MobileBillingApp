@@ -4,6 +4,7 @@ import android.Manifest
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Build
+import android.view.View
 import android.widget.ScrollView
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -35,7 +36,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -582,38 +582,71 @@ fun BillDetails(list: List<BillItemCollectionWithBillItems>, customerList: List<
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        lateinit var bit: MutableState<Bitmap>
         items(list) { bill ->
             var isBit by remember{ mutableStateOf(false) }
 
             val context = LocalContext.current
-            ScrollableCapturable(controller = rememberCaptureController(), onCaptured = {bitmap, throwable ->
-                    if (bitmap != null) {
-                        bit.value = bitmap
-                        isBit = true
-//                        saveFile(customerList.filter { it.id == bill.itemCollection.customerid }[0].name + bill.itemCollection.bill_no + ".pdf" ,bitmap)
-                    }
-            } ) {
-                BillReceiptItem(
-                bill = bill,
-                customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0]
-                , onBillDelete = {
-                    onBillDelete(it)
-                }){
+            val bitmap = Bitmap.createBitmap(400, 400, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
 
+// Create the ComposeView and measure/layout it within the Compose context
+            ComposeView(context).apply {
+                setContent {
+                    BillReceiptItem(
+                        bill = bill,
+                        customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0], onBillDelete = {}
+                    ) {
+                        // Content of the ComposeView
+                    }
                 }
-//                BillReceiptItem(
-//                    bill = bill,
-//                    customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0]
-//                    , onBillDelete = {
-//                    }){
-//                }
-            }
-            if(isBit) {
+
+                // Measure and layout the ComposeView
+                measure(
+                    View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY)
+                )
+                layout(0, 0, measuredWidth, measuredHeight)
+
+                // Draw the ComposeView onto the canvas
+                draw(canvas)
+
+                // Show the bitmap in a Dialog
                 Dialog(onDismissRequest = { /*TODO*/ }) {
-                    Image(bitmap = bit.value.asImageBitmap(), contentDescription = "")
+                    Image(bitmap = bitmap.asImageBitmap(), contentDescription = "")
                 }
             }
+
+
+//            BillReceiptItem(
+//                bill = bill,
+//                customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0]
+//                , onBillDelete = {
+//                    onBillDelete(it)
+//                }){
+//            }
+//            ScrollableCapturable(controller = rememberCaptureController(), onCaptured = {bitmap, throwable ->
+//                    if (bitmap != null) {
+//                        bit.value = bitmap
+//                        isBit = true
+////                        saveFile(customerList.filter { it.id == bill.itemCollection.customerid }[0].name + bill.itemCollection.bill_no + ".pdf" ,bitmap)
+//                    }
+//            } ) {
+//                BillReceiptItem(
+//                bill = bill,
+//                customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0]
+//                , onBillDelete = {
+//                    onBillDelete(it)
+//                }){
+//
+//                }
+////                BillReceiptItem(
+////                    bill = bill,
+////                    customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0]
+////                    , onBillDelete = {
+////                    }){
+////                }
+//            }
+
             Spacer(modifier = Modifier.height(10.dp))
         }
         item {
