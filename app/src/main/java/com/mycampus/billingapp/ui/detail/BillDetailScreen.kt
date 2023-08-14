@@ -1,11 +1,14 @@
 package com.mycampus.billingapp.ui.detail
 
 import android.Manifest
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Build
+import android.util.Log
 import android.view.View
-import android.widget.ScrollView
+import android.view.ViewTreeObserver
+import androidx.appcompat.widget.LinearLayoutCompat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -55,7 +58,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
@@ -145,14 +147,14 @@ fun BillDetailScreen(
             BillDetails(
                 itemCol,
                 customerCol
-            ){
+            ) {
                 viewModel.deleteBillItemCol(it)
             }
         } else {
             ErrorMessage(msg = "No Corresponding record found...")
         }
         val deleteProgress = viewModel.deleteProcess.collectAsState()
-        if(deleteProgress.value){
+        if (deleteProgress.value) {
             ProgressBarCus {
                 //onDismiss
             }
@@ -285,9 +287,16 @@ fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> 
 
 
 @Composable
-fun BillReceiptItem(isPrint : Boolean = true,bill: BillItemCollectionWithBillItems, customerItem: CustomerItem,onBillDelete:(BillItemCollectionWithBillItems)->Unit,onPdfClick: () -> Unit) {
+fun BillReceiptItem(
+    modifier: Modifier = Modifier,
+    isPrint: Boolean = true,
+    bill: BillItemCollectionWithBillItems,
+    customerItem: CustomerItem,
+    onBillDelete: (BillItemCollectionWithBillItems) -> Unit,
+    onPdfClick: () -> Unit
+) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth(.97f)
             .background(Color.Transparent),
         border = BorderStroke(1.dp, Color.Gray),
@@ -469,13 +478,15 @@ fun BillReceiptItem(isPrint : Boolean = true,bill: BillItemCollectionWithBillIte
                 )
             }
             Spacer(modifier = Modifier.height(5.dp))
-            if(isPrint){
+
+
+            if (isPrint) {
                 BillReceiptButtonRow(
                     bill = bill,
                     customerItem = customerItem,
-                    onBillDelete =onBillDelete,
+                    onBillDelete = onBillDelete,
                     onPdfClick = {
-
+                        onPdfClick()
                     },
                     onPrintClick = {}
                 )
@@ -485,7 +496,13 @@ fun BillReceiptItem(isPrint : Boolean = true,bill: BillItemCollectionWithBillIte
 }
 
 @Composable
-fun BillReceiptButtonRow(bill : BillItemCollectionWithBillItems,customerItem : CustomerItem,onBillDelete : (BillItemCollectionWithBillItems)->Unit,onPdfClick:()->Unit,onPrintClick:(BillItemCollectionPrint)->Unit) {
+fun BillReceiptButtonRow(
+    bill: BillItemCollectionWithBillItems,
+    customerItem: CustomerItem,
+    onBillDelete: (BillItemCollectionWithBillItems) -> Unit,
+    onPdfClick: () -> Unit,
+    onPrintClick: (BillItemCollectionPrint) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -575,55 +592,91 @@ fun BillReceiptButtonRow(bill : BillItemCollectionWithBillItems,customerItem : C
     }
 }
 
+fun createBitmapFromComposable(view: View, width: Int, height: Int): Bitmap {
+    val location = IntArray(2)
+    view.getLocationInWindow(location)
+
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+
+    view.draw(canvas)
+
+    return bitmap
+}
 @Composable
-fun BillDetails(list: List<BillItemCollectionWithBillItems>, customerList: List<CustomerItem>,onBillDelete:(BillItemCollectionWithBillItems)->Unit) {
+fun BillDetails(
+    list: List<BillItemCollectionWithBillItems>,
+    customerList: List<CustomerItem>,
+    onBillDelete: (BillItemCollectionWithBillItems) -> Unit
+) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         items(list) { bill ->
-            var isBit by remember{ mutableStateOf(false) }
-
-            val context = LocalContext.current
-            val bitmap = Bitmap.createBitmap(400, 400, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
 
 // Create the ComposeView and measure/layout it within the Compose context
-            ComposeView(context).apply {
-                setContent {
-                    BillReceiptItem(
-                        bill = bill,
-                        customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0], onBillDelete = {}
-                    ) {
-                        // Content of the ComposeView
-                    }
-                }
-
-                // Measure and layout the ComposeView
-                measure(
-                    View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY),
-                    View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY)
-                )
-                layout(0, 0, measuredWidth, measuredHeight)
-
-                // Draw the ComposeView onto the canvas
-                draw(canvas)
-
-                // Show the bitmap in a Dialog
-                Dialog(onDismissRequest = { /*TODO*/ }) {
-                    Image(bitmap = bitmap.asImageBitmap(), contentDescription = "")
-                }
-            }
-
-
-//            BillReceiptItem(
-//                bill = bill,
-//                customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0]
-//                , onBillDelete = {
-//                    onBillDelete(it)
-//                }){
+//            ComposeView(context).apply {
+//                setContent {
+//                    BillReceiptItem(
+//                        bill = bill,
+//                        customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0], onBillDelete = {}
+//                    ) {
+//                        // Content of the ComposeView
+//                    }
+//                }
+//
+//                // Measure and layout the ComposeView
+//                measure(
+//                    View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY),
+//                    View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY)
+//                )
+//                layout(0, 0, measuredWidth, measuredHeight)
+//
+//                // Draw the ComposeView onto the canvas
+//                draw(canvas)
+//
+//                // Show the bitmap in a Dialog
+//                Dialog(onDismissRequest = { /*TODO*/ }) {
+//                    Image(bitmap = bitmap.asImageBitmap(), contentDescription = "")
+//                }
 //            }
+            val context = LocalContext.current
+            var bitmapState by remember { mutableStateOf<Bitmap?>(null) }
+
+
+
+
+
+            BillReceiptItem(
+                bill = bill,
+                customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0],
+                onBillDelete = {
+                    onBillDelete(it)
+                }) { BillReceiptItemView(context ,{
+                BillReceiptItem(
+                    bill = bill,
+                    customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0],
+                    onBillDelete = {
+                    }
+                ){
+
+                }
+            },
+                bill,
+                customerList.filter { it.id == bill.itemCollection.customerid }[0]
+            ){
+                bitmapState = it
+                Log.d("Bitmap",bitmapState.toString())
+            }}
+            if (bitmapState != null) {
+                Log.d("Bitmap",bitmapState.toString())
+                Image(
+                    bitmap = bitmapState!!.asImageBitmap(),
+                    contentDescription = ""
+                )
+            }
 //            ScrollableCapturable(controller = rememberCaptureController(), onCaptured = {bitmap, throwable ->
 //                    if (bitmap != null) {
 //                        bit.value = bitmap
@@ -656,6 +709,7 @@ fun BillDetails(list: List<BillItemCollectionWithBillItems>, customerList: List<
 
 
 }
+
 fun saveBitmapToFile(bitmap: Bitmap, file: File) {
     try {
         val fos = FileOutputStream(file)
@@ -665,95 +719,68 @@ fun saveBitmapToFile(bitmap: Bitmap, file: File) {
         e.printStackTrace()
     }
 }
-fun saveFile(filename: String,bitmap : Bitmap) {
+
+fun saveFile(filename: String, bitmap: Bitmap) {
     val storageDir = File("/storage/emulated/0/Download/myCampus")
     val file = File(filename)
-    if(storageDir.exists())
+    if (storageDir.exists())
         storageDir.mkdirs()
-    if(file.exists())
+    if (file.exists())
         file.createNewFile()
-    saveBitmapToFile(bitmap,file)
+    saveBitmapToFile(bitmap, file)
 }
 
 //        implementation "dev.shreyaspatil:capturable:1.0.3"
 
-fun getPermissions():Array<String>{
-    return if(Build.VERSION.SDK_INT >= 33){
-        arrayOf(Manifest.permission.READ_MEDIA_AUDIO,Manifest.permission.READ_MEDIA_IMAGES,Manifest.permission.READ_MEDIA_VIDEO)
-    }else{
-        arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE)
+fun getPermissions(): Array<String> {
+    return if (Build.VERSION.SDK_INT >= 33) {
+        arrayOf(
+            Manifest.permission.READ_MEDIA_AUDIO,
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO
+        )
+    } else {
+        arrayOf(
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
     }
 }
-@Composable
-fun ScrollableCapturable(
-    modifier: Modifier = Modifier,
-    controller: CaptureController,
-    onCaptured: (Bitmap?, Throwable?) -> Unit,
-    content: @Composable () -> Unit
-) {
-    AndroidView(
-        factory = { context ->
-            val scrollView = ScrollView(context)
-            val composeView = ComposeView(context).apply {
-                setContent {
-                    content()
-                }
+
+class BillReceiptItemView(
+    ctx: Context,
+    content: @Composable () -> Unit,
+    bill: BillItemCollectionWithBillItems,
+    customerItem: CustomerItem,
+    onBitmapCreated: (bitmap: Bitmap) -> Unit
+) : LinearLayoutCompat(ctx) {
+
+    init {
+        val width = 600
+        val height = 670
+
+        val view = ComposeView(ctx)
+        view.visibility = View.VISIBLE
+        view.layoutParams = LayoutParams(width, height)
+        this.addView(view)
+
+        view.setContent {
+            BillReceiptItem(bill = bill, customerItem = customerItem, onBillDelete = {}) {
+
             }
-            scrollView.addView(composeView)
-            scrollView
-        },
-        update = { scrollView ->
-            if (controller.readyForCapture) {
-                // Hide scrollbars for capture
-                scrollView.isVerticalScrollBarEnabled = false
-                scrollView.isHorizontalScrollBarEnabled = false
-                try {
-                    val bitmap = loadBitmapFromScrollView(scrollView)
-                    onCaptured(bitmap, null)
-                } catch (throwable: Throwable) {
-                    onCaptured(null, throwable)
-                }
-                scrollView.isVerticalScrollBarEnabled = true
-                scrollView.isHorizontalScrollBarEnabled = true
-                controller.captured()
+        }
+
+        viewTreeObserver.addOnGlobalLayoutListener(object :
+            ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                val bitmap = createBitmapFromComposable(view, width, height)
+                onBitmapCreated(bitmap)
+                viewTreeObserver.removeOnGlobalLayoutListener(this)
             }
-        },
-        modifier = modifier
-    )
-}
-
-/**
- * Need to use view.getChildAt(0).height instead of just view.height,
- * so you can get all ScrollView content.
- */
-private fun loadBitmapFromScrollView(scrollView: ScrollView): Bitmap {
-    val bitmap = Bitmap.createBitmap(
-        scrollView.width,
-        scrollView.getChildAt(0).height,
-        Bitmap.Config.ARGB_8888
-    )
-    val canvas = Canvas(bitmap)
-    scrollView.draw(canvas)
-    return bitmap
-}
-
-class CaptureController {
-    var readyForCapture by mutableStateOf(false)
-        private set
-
-    fun capture() {
-        readyForCapture = true
-    }
-
-    internal fun captured() {
-        readyForCapture = false
+        })
     }
 }
 
-@Composable
-fun rememberCaptureController(): CaptureController {
-    return remember { CaptureController() }
-}
 @Composable
 fun BillItemWithAmountOnBill(index: Int, data: BillItem) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
