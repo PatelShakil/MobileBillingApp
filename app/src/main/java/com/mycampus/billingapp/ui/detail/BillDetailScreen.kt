@@ -1,16 +1,9 @@
 package com.mycampus.billingapp.ui.detail
 
-import android.Manifest
-import android.content.Context
+import android.app.Activity
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.os.Build
 import android.util.Log
-import android.view.View
-import android.view.ViewTreeObserver
-import androidx.appcompat.widget.LinearLayoutCompat
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -50,31 +43,40 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.view.drawToBitmap
 import androidx.navigation.NavController
 import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.Utils
+import com.mycampus.billingapp.common.Utils.Companion.convertLongToDate
+import com.mycampus.billingapp.common.Utils.Companion.saveFile
+import com.mycampus.billingapp.common.Utils.Companion.viewPdf
 import com.mycampus.billingapp.common.uicomponents.DatePickerDialogCustom
+import com.mycampus.billingapp.common.uicomponents.DottedDivider
 import com.mycampus.billingapp.common.uicomponents.ErrorMessage
 import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
 import com.mycampus.billingapp.data.models.BillItemCollectionPrint
+import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.data.room.entities.CustomerItem
 import com.mycampus.billingapp.ui.customer.CustomerViewModel
 import com.mycampus.billingapp.ui.home.MainColor
 import com.mycampus.billingapp.ui.home.UserViewModel
-import java.io.File
-import java.io.FileOutputStream
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -84,7 +86,7 @@ import kotlin.math.roundToInt
 fun BillDetailScreen(
     viewModel: UserViewModel,
     customerViewModel: CustomerViewModel,
-    navController: NavController
+    navController: NavController,
 ) {
     var isFilterClick by remember { mutableStateOf(false) }
     var selectedDate by remember {
@@ -108,9 +110,12 @@ fun BillDetailScreen(
     }
     var customerCol by remember { mutableStateOf(listOf<CustomerItem>()) }
 
+    var isPdfClick by remember { mutableStateOf(false) }
+    var pdfIndex by remember { mutableStateOf("") }
     customerViewModel.allCustomers.observeForever {
         customerCol = it
     }
+    val user = viewModel.getUserDetails()
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth(.95f),
@@ -142,13 +147,22 @@ fun BillDetailScreen(
 
 
 
+
         Spacer(modifier = Modifier.height(5.dp))
         if (itemCol.isNotEmpty() && customerCol.isNotEmpty()) {
             BillDetails(
                 itemCol,
-                customerCol
+                customerCol,
+                onBillDelete = {
+                    viewModel.deleteBillItemCol(it)
+                },
+                onPdfClick = {
+                    isPdfClick = true
+                    pdfIndex = it
+                }
             ) {
-                viewModel.deleteBillItemCol(it)
+                //on Print Click
+                Log.d("BillItemPrint", it.toString())
             }
         } else {
             ErrorMessage(msg = "No Corresponding record found...")
@@ -160,6 +174,7 @@ fun BillDetailScreen(
             }
         }
     }
+    val context = LocalContext.current
     if (isFilterClick) {
         FilterPopup(onDismiss = {
             isFilterClick = !isFilterClick
@@ -197,7 +212,73 @@ fun BillDetailScreen(
                 }
             })
     }
+    if (isPdfClick) {
+        val billItems = itemCol.filter { it.itemCollection.bill_no == pdfIndex }[0]
+        val customerItem =
+            customerCol.filter { it.id == itemCol.filter { it.itemCollection.bill_no == pdfIndex }[0].itemCollection.customerid }[0]
+        Dialog(
+            onDismissRequest = {
+                isPdfClick = !isPdfClick
+            },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false
+            )
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+
+                val briView = ComposeView(context).apply {
+                    setContent {
+                        BillReceiptItemReceipt(bill = billItems, customerItem = customerItem,
+                            shop = user!!
+                        )
+                    }
+                }
+
+                var isViewLaidOut by remember { mutableStateOf(false) }
+                AndroidView(factory = { briView })
+                briView.viewTreeObserver.addOnGlobalLayoutListener {
+                    if (!isViewLaidOut) {
+                        isViewLaidOut = true
+                        // Capture the bitmap here
+                        GlobalScope.launch {
+                            delay(2000)
+                            val bitmap = briView.drawToBitmap(Bitmap.Config.ARGB_8888)
+                            val filename = billItems.itemCollection.bill_no + convertLongToDate(
+                                billItems.itemCollection.creation_date,
+                                "_dd_MM_yyyy"
+                            )
+                            saveFile(filename, bitmap)
+                            viewPdf(context as Activity, filename)
+                            isPdfClick = !isPdfClick
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(50.dp))
+
+                /*if(isBtnClick){
+                    briView.viewTreeObserver.addOnGlobalLayoutListener {
+                        if (!isViewLaidOut) {
+                            isViewLaidOut = true
+                            // Capture the bitmap here
+                            val bitmap = briView.drawToBitmap(Bitmap.Config.ARGB_8888)
+                            saveFile(billItems.itemCollection.bill_no, bitmap)
+                            viewPdf(context as Activity, billItems.itemCollection.bill_no)
+                            isPdfClick = !isPdfClick
+                        }
+                    }
+                }*/
+                ProgressBarCus {
+
+                }
+            }
+        }
+    }
 }
+
 
 @Composable
 fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> Unit) {
@@ -289,11 +370,12 @@ fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> 
 @Composable
 fun BillReceiptItem(
     modifier: Modifier = Modifier,
-    isPrint: Boolean = true,
+    isNotSavePDF: Boolean = true,
     bill: BillItemCollectionWithBillItems,
     customerItem: CustomerItem,
     onBillDelete: (BillItemCollectionWithBillItems) -> Unit,
-    onPdfClick: () -> Unit
+    onPrintClick: (BillItemCollectionPrint) -> Unit,
+    onPdfClick: (String) -> Unit
 ) {
     Card(
         modifier = modifier
@@ -479,18 +561,249 @@ fun BillReceiptItem(
             }
             Spacer(modifier = Modifier.height(5.dp))
 
-
-            if (isPrint) {
+            if (isNotSavePDF) {
                 BillReceiptButtonRow(
                     bill = bill,
                     customerItem = customerItem,
                     onBillDelete = onBillDelete,
                     onPdfClick = {
-                        onPdfClick()
+                        onPdfClick(bill.itemCollection.bill_no)
                     },
-                    onPrintClick = {}
+                    onPrintClick = onPrintClick
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun BillReceiptItemReceipt(
+    modifier: Modifier = Modifier,
+    bill: BillItemCollectionWithBillItems,
+    customerItem: CustomerItem,
+    shop:UserDetails
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = RectangleShape
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(vertical = 5.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Column(modifier = Modifier.fillMaxWidth(.97f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(shop.name,
+                style = MaterialTheme.typography.titleLarge)
+                Text(text = shop.address, style = MaterialTheme.typography.titleSmall)
+                Text(shop.mobile +" | " + shop.email,
+                style = MaterialTheme.typography.titleSmall)
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            DottedDivider(modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(10.dp))
+            Card(
+                modifier = modifier
+                    .fillMaxWidth(.97f)
+                    .background(Color.Transparent)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White)
+                        .padding(vertical = 5.dp)
+                        .padding(bottom = 5.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(.97f),
+                    ) {
+                        Column(modifier = Modifier.weight(.5f)) {
+                            Text(
+                                "Customer Info: ",
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                "Name : " + customerItem.name,
+                                fontSize = 12.sp
+                            )
+                            Text(
+                                "Mobile : " +
+                                        customerItem.mobile,
+                                fontSize = 12.sp
+                            )
+                        }
+                        Column(
+                            modifier = Modifier.weight(.5f),
+                            horizontalAlignment = Alignment.End
+                        ) {
+                            Text(
+                                "Bill Info: ",
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                "Bill No : " +
+                                        bill.itemCollection.bill_no,
+                                fontSize = 12.sp
+                            )
+                            Text(
+                                "Created By : " +
+                                        bill.itemCollection.created_by,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(.97f)) {
+                        Text(
+                            text = "Address : ",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight(500)
+                        )
+                        Text(
+                            text = customerItem.address,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Column(
+                        modifier = Modifier
+                            .border(1.dp, Color.Gray)
+                            .fillMaxWidth(.97f)
+                    ) {
+                        Text(
+                            "Bill at : " + Utils.convertLongToDate(
+                                bill.itemCollection.creation_date,
+                                "dd-MMMM-yyyy hh:mma"
+                            ),
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(5.dp),
+                            color = Color.Black
+                        )
+                        Divider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, Color.Gray)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Item Name",
+                                modifier = Modifier
+                                    .weight(.6f)
+                                    .padding(5.dp),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight(400)
+                            )
+                            Spacer(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(35.dp)
+                                    .border(1.dp, Color.Gray)
+                            )
+                            Text(
+                                text = "Amount",
+                                modifier = Modifier
+                                    .weight(.4f)
+                                    .padding(end = 5.dp),
+                                textAlign = TextAlign.End,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight(400)
+                            )
+                        }
+
+                        Divider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, Color.Gray)
+                        )
+                        bill.itemList.forEachIndexed() { index, billItem ->
+                            BillItemWithAmountOnBill(index = index + 1, data = billItem)
+                            Divider(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .border(1.dp, Color.Gray)
+                            )
+                        }
+                        val totalAmount = bill.itemList.sumOf {
+                            it.item_amount
+                        }
+                        BillItemWithAmountOnBillBelow(
+                            data = "Sub Total",
+                            amount = (((totalAmount * bill.itemCollection.tax) / 100) + bill.itemCollection.discount + totalAmount).toString()
+                        )
+                        Divider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, Color.Gray)
+                        )
+                        BillItemWithAmountOnBillBelow(
+                            data = "Tax",
+                            amount = ((totalAmount * bill.itemCollection.tax) / 100).toString() + " ( @ ${bill.itemCollection.tax.roundToInt()}% )"
+                        )
+                        Divider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, Color.Gray)
+                        )
+                        BillItemWithAmountOnBillBelow(
+                            data = "Discount",
+                            amount = bill.itemCollection.discount.toString()
+                        )
+                        Divider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, Color.Gray)
+                        )
+                        BillItemWithAmountOnBillBelow(
+                            data = "Total Amount",
+                            amount = (totalAmount + ((totalAmount * bill.itemCollection.tax) / 100) - bill.itemCollection.discount).toString()
+                        )
+                        Divider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, Color.Gray)
+                        )
+                        Text(
+                            "Payment mode : " + if (bill.itemCollection.bill_pay_mode.trim() == "Paid by Cash") "Cash" else "Online",
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(start = 5.dp)
+                        )
+                        Divider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, Color.Gray)
+                        )
+                        Text(
+                            "*" + bill.itemCollection.remarks,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(start = 5.dp),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(5.dp))
+                }
+            }
+            Spacer(modifier = Modifier.height(5.dp))
+            DottedDivider(modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                "Bill Receipt generated by Billing App - No Signature required",
+                fontFamily = FontFamily.Monospace,
+                fontSize = 10.sp,
+                modifier = Modifier.fillMaxWidth(0.97f),
+                textAlign = TextAlign.Center,
+                softWrap = true,
+                maxLines = Int.MAX_VALUE // Allow unlimited lines
+
+            )
+            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }
@@ -592,22 +905,13 @@ fun BillReceiptButtonRow(
     }
 }
 
-fun createBitmapFromComposable(view: View, width: Int, height: Int): Bitmap {
-    val location = IntArray(2)
-    view.getLocationInWindow(location)
-
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-
-    view.draw(canvas)
-
-    return bitmap
-}
 @Composable
 fun BillDetails(
     list: List<BillItemCollectionWithBillItems>,
     customerList: List<CustomerItem>,
-    onBillDelete: (BillItemCollectionWithBillItems) -> Unit
+    onBillDelete: (BillItemCollectionWithBillItems) -> Unit,
+    onPdfClick: (String) -> Unit,
+    onPrintClick: (BillItemCollectionPrint) -> Unit
 ) {
 
     LazyColumn(
@@ -616,89 +920,16 @@ fun BillDetails(
     ) {
         items(list) { bill ->
 
-// Create the ComposeView and measure/layout it within the Compose context
-//            ComposeView(context).apply {
-//                setContent {
-//                    BillReceiptItem(
-//                        bill = bill,
-//                        customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0], onBillDelete = {}
-//                    ) {
-//                        // Content of the ComposeView
-//                    }
-//                }
-//
-//                // Measure and layout the ComposeView
-//                measure(
-//                    View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY),
-//                    View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY)
-//                )
-//                layout(0, 0, measuredWidth, measuredHeight)
-//
-//                // Draw the ComposeView onto the canvas
-//                draw(canvas)
-//
-//                // Show the bitmap in a Dialog
-//                Dialog(onDismissRequest = { /*TODO*/ }) {
-//                    Image(bitmap = bitmap.asImageBitmap(), contentDescription = "")
-//                }
-//            }
-            val context = LocalContext.current
-            var bitmapState by remember { mutableStateOf<Bitmap?>(null) }
-
-
-
-
 
             BillReceiptItem(
                 bill = bill,
                 customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0],
                 onBillDelete = {
                     onBillDelete(it)
-                }) { BillReceiptItemView(context ,{
-                BillReceiptItem(
-                    bill = bill,
-                    customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0],
-                    onBillDelete = {
-                    }
-                ){
+                }, onPrintClick = { onPrintClick(it) }) {
+                onPdfClick(it)
 
-                }
-            },
-                bill,
-                customerList.filter { it.id == bill.itemCollection.customerid }[0]
-            ){
-                bitmapState = it
-                Log.d("Bitmap",bitmapState.toString())
-            }}
-            if (bitmapState != null) {
-                Log.d("Bitmap",bitmapState.toString())
-                Image(
-                    bitmap = bitmapState!!.asImageBitmap(),
-                    contentDescription = ""
-                )
             }
-//            ScrollableCapturable(controller = rememberCaptureController(), onCaptured = {bitmap, throwable ->
-//                    if (bitmap != null) {
-//                        bit.value = bitmap
-//                        isBit = true
-////                        saveFile(customerList.filter { it.id == bill.itemCollection.customerid }[0].name + bill.itemCollection.bill_no + ".pdf" ,bitmap)
-//                    }
-//            } ) {
-//                BillReceiptItem(
-//                bill = bill,
-//                customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0]
-//                , onBillDelete = {
-//                    onBillDelete(it)
-//                }){
-//
-//                }
-////                BillReceiptItem(
-////                    bill = bill,
-////                    customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0]
-////                    , onBillDelete = {
-////                    }){
-////                }
-//            }
 
             Spacer(modifier = Modifier.height(10.dp))
         }
@@ -708,77 +939,6 @@ fun BillDetails(
     }
 
 
-}
-
-fun saveBitmapToFile(bitmap: Bitmap, file: File) {
-    try {
-        val fos = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
-        fos.close()
-    } catch (e: Exception) {
-        e.printStackTrace()
-    }
-}
-
-fun saveFile(filename: String, bitmap: Bitmap) {
-    val storageDir = File("/storage/emulated/0/Download/myCampus")
-    val file = File(filename)
-    if (storageDir.exists())
-        storageDir.mkdirs()
-    if (file.exists())
-        file.createNewFile()
-    saveBitmapToFile(bitmap, file)
-}
-
-//        implementation "dev.shreyaspatil:capturable:1.0.3"
-
-fun getPermissions(): Array<String> {
-    return if (Build.VERSION.SDK_INT >= 33) {
-        arrayOf(
-            Manifest.permission.READ_MEDIA_AUDIO,
-            Manifest.permission.READ_MEDIA_IMAGES,
-            Manifest.permission.READ_MEDIA_VIDEO
-        )
-    } else {
-        arrayOf(
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
-        )
-    }
-}
-
-class BillReceiptItemView(
-    ctx: Context,
-    content: @Composable () -> Unit,
-    bill: BillItemCollectionWithBillItems,
-    customerItem: CustomerItem,
-    onBitmapCreated: (bitmap: Bitmap) -> Unit
-) : LinearLayoutCompat(ctx) {
-
-    init {
-        val width = 600
-        val height = 670
-
-        val view = ComposeView(ctx)
-        view.visibility = View.VISIBLE
-        view.layoutParams = LayoutParams(width, height)
-        this.addView(view)
-
-        view.setContent {
-            BillReceiptItem(bill = bill, customerItem = customerItem, onBillDelete = {}) {
-
-            }
-        }
-
-        viewTreeObserver.addOnGlobalLayoutListener(object :
-            ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                val bitmap = createBitmapFromComposable(view, width, height)
-                onBitmapCreated(bitmap)
-                viewTreeObserver.removeOnGlobalLayoutListener(this)
-            }
-        })
-    }
 }
 
 @Composable

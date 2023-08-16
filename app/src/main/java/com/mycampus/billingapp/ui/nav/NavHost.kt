@@ -33,13 +33,13 @@ import androidx.navigation.compose.rememberNavController
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.ui.customer.CustomerScreen
 import com.mycampus.billingapp.ui.detail.BillDetailScreen
-import com.mycampus.billingapp.ui.home.bluetooth.BluetoothUiState
-import com.mycampus.billingapp.ui.home.bluetooth.BluetoothViewModel
 import com.mycampus.billingapp.ui.home.HomeScreen
 import com.mycampus.billingapp.ui.home.MainColor
 import com.mycampus.billingapp.ui.home.PrinterPopup
 import com.mycampus.billingapp.ui.home.SettingsPopup
 import com.mycampus.billingapp.ui.home.UserViewModel
+import com.mycampus.billingapp.ui.home.bluetooth.BluetoothUiState
+import com.mycampus.billingapp.ui.home.bluetooth.BluetoothViewModel
 
 @Composable
 fun AppNavigation(onEnableBluetooth:()-> Unit) {
@@ -61,15 +61,16 @@ fun AppNavigation(onEnableBluetooth:()-> Unit) {
     val isBluetoothEnabled: Boolean = bluetoothAdapter?.isEnabled == true
 
     Column {
-        HeaderLayout(title,state,userViewModel, onStartScan = {
-            if (!isBluetoothEnabled) {
-                onEnableBluetooth()
+            HeaderLayout(title, state, userViewModel, onStartScan = {
+                if (!isBluetoothEnabled) {
+                    onEnableBluetooth()
+                    btViewModel.startScan()
+                }
                 btViewModel.startScan()
+            }, onStopScan = btViewModel::stopScan) {
+                navController.navigate(Screen.Customer.route)
             }
-            btViewModel.startScan()
-        }, onStopScan = btViewModel::stopScan){
-            navController.navigate(Screen.Customer.route)
-        }
+
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route
@@ -85,6 +86,7 @@ fun AppNavigation(onEnableBluetooth:()-> Unit) {
             composable(Screen.Customer.route){
                 CustomerScreen(viewModel = hiltViewModel(), navController = navController)
                 title = "Customers"
+
             }
         }
     }

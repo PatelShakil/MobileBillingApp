@@ -58,6 +58,7 @@ import com.mycampus.billingapp.common.uicomponents.CusDropdownSearch
 import com.mycampus.billingapp.common.uicomponents.DateTimePicker
 import com.mycampus.billingapp.common.uicomponents.DropDownItemData
 import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
+import com.mycampus.billingapp.data.models.BillItemCollectionPrint
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
@@ -72,14 +73,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.math.roundToInt
 
-//import androidx.navigation.NavController
-//import coil.compose.rememberAsyncImagePainter
-//import com.mycampus.smsapp.R
-//import com.mycampus.smsapp.ui.common.GenerateStudentType
-//import com.mycampus.smsapp.ui.theme.LightMainColor
-//import com.mycampus.smsapp.ui.theme.MainColor
-//import com.mycampus.smsapp.ui.theme.spacing
-//import com.mycampus.smsapp.ui.utils.toast
 
 
 @Composable
@@ -99,7 +92,6 @@ fun HomeScreen(
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         HeaderScreen(userDetails = userDetails ) {
             isSettingsExpanded = true
         }
@@ -191,13 +183,29 @@ fun HomeScreen(
                 customerCol = it
             }
 
+            var billItemCollectionPrint by remember{ mutableStateOf<BillItemCollectionPrint?>(null) }
+
             MainScreenFees(
                 viewModel.getUserDetails() ?: UserDetails(),
                 customerCol,
                 onProceedClicked = {},
                 navController = NavController(LocalContext.current) ,{ billCol, list ->
-                Log.d("billCol", billCol.toString())
-                Log.d("BillItemList", list.toString())
+                    billItemCollectionPrint = BillItemCollectionPrint(
+                        billCol.id,
+                        customerCol.filter { it.id == billCol.customerid }[0],
+                        billCol.bill_no,
+                        billCol.bill_pay_mode,
+                        billCol.tax,
+                        billCol.total_amount,
+                        billCol.paid_amount,
+                        billCol.balance_amount,
+                        billCol.discount,
+                        billCol.remarks,
+                        billCol.creation_date,
+                        billCol.created_by,
+                        list,
+                        billCol.is_sync
+                    )
                 viewModel.addItemCollection(billCol, list)
                 }){
                 customerViewModel.addCustomer(it)
@@ -212,7 +220,9 @@ fun HomeScreen(
                 ConfirmationDialog(onDismiss = {
                     viewModel.isInserted.value = false
                 }) {
-                    //on print
+                    //use this object for printing bill receipt
+                    Log.d("Bill Receipt Print",billItemCollectionPrint.toString())
+
                 }
             }
 
@@ -629,8 +639,7 @@ fun MainScreenFees(
     onProceedClicked: (List<CollectFeeData>) -> Unit,
     navController: NavController,
     onFeePaid: (BillItemCollection, List<BillItem>) -> Unit,
-    onCustomerAddClicked:(CustomerItem)->Unit
-) {
+    onCustomerAddClicked:(CustomerItem)->Unit) {
     val context = LocalContext.current
 //    var studentName = viewModel.studentName.collectAsState()
 //    var className = viewModel.className.collectAsState()
