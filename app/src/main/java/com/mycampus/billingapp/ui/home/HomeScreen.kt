@@ -234,17 +234,16 @@ fun HomeScreen(
                             it.itemCollection.creation_date,
                             "DDMMYY"
                         ) == Utils.convertLongToDate(System.currentTimeMillis(), "DDMMYY")
-                    }.sumOf {
-                        it.itemCollection.total_amount
-                    }
+                    }.sumOf { bill->
+                        bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount                   }
                 val cashAmount = itemCol.filter {
                     Utils.convertLongToDate(
                         it.itemCollection.creation_date,
                         "DDMMYY"
                     ) == Utils.convertLongToDate(System.currentTimeMillis(), "DDMMYY") &&
                             it.itemCollection.bill_pay_mode == "Paid by Cash"
-                }.sumOf {
-                    it.itemCollection.total_amount
+                }.sumOf {bill->
+                    bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount
                 }
                 val onlineAmount = itemCol.filter {
                     Utils.convertLongToDate(
@@ -252,8 +251,8 @@ fun HomeScreen(
                         "DDMMYY"
                     ) == Utils.convertLongToDate(System.currentTimeMillis(), "DDMMYY") &&
                             it.itemCollection.bill_pay_mode != "Paid by Cash"
-                }.sumOf {
-                    it.itemCollection.total_amount
+                }.sumOf {bill->
+                    bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount
                 }
                 BottomCard(date, totalAmount, cashAmount, onlineAmount) {
                     navController.navigate(Screen.Details.route)

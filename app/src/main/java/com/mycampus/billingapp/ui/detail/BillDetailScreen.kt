@@ -1,7 +1,11 @@
 package com.mycampus.billingapp.ui.detail
 
 import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -153,6 +157,7 @@ fun BillDetailScreen(
             BillDetails(
                 itemCol,
                 customerCol,
+                user!!,
                 onBillDelete = {
                     viewModel.deleteBillItemCol(it)
                 },
@@ -232,7 +237,8 @@ fun BillDetailScreen(
 
                 val briView = ComposeView(context).apply {
                     setContent {
-                        BillReceiptItemReceipt(bill = billItems, customerItem = customerItem,
+                        BillReceiptItemReceipt(
+                            bill = billItems, customerItem = customerItem,
                             shop = user!!
                         )
                     }
@@ -373,6 +379,7 @@ fun BillReceiptItem(
     isNotSavePDF: Boolean = true,
     bill: BillItemCollectionWithBillItems,
     customerItem: CustomerItem,
+    shop: UserDetails,
     onBillDelete: (BillItemCollectionWithBillItems) -> Unit,
     onPrintClick: (BillItemCollectionPrint) -> Unit,
     onPdfClick: (String) -> Unit
@@ -503,12 +510,10 @@ fun BillReceiptItem(
                             .border(1.dp, Color.Gray)
                     )
                 }
-                val totalAmount = bill.itemList.sumOf {
-                    it.item_amount
-                }
+                val totalAmount = bill.itemCollection.total_amount
                 BillItemWithAmountOnBillBelow(
                     data = "Sub Total",
-                    amount = (((totalAmount * bill.itemCollection.tax) / 100) + bill.itemCollection.discount + totalAmount).toString()
+                    amount = (((totalAmount * bill.itemCollection.tax) / 100) + totalAmount).toString()
                 )
                 Divider(
                     modifier = Modifier
@@ -565,6 +570,7 @@ fun BillReceiptItem(
                 BillReceiptButtonRow(
                     bill = bill,
                     customerItem = customerItem,
+                    userDetails = shop,
                     onBillDelete = onBillDelete,
                     onPdfClick = {
                         onPdfClick(bill.itemCollection.bill_no)
@@ -581,7 +587,7 @@ fun BillReceiptItemReceipt(
     modifier: Modifier = Modifier,
     bill: BillItemCollectionWithBillItems,
     customerItem: CustomerItem,
-    shop:UserDetails
+    shop: UserDetails
 ) {
     Card(
         modifier = Modifier
@@ -596,12 +602,19 @@ fun BillReceiptItemReceipt(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(10.dp))
-            Column(modifier = Modifier.fillMaxWidth(.97f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(shop.name,
-                style = MaterialTheme.typography.titleLarge)
+            Column(
+                modifier = Modifier.fillMaxWidth(.97f),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    shop.name,
+                    style = MaterialTheme.typography.titleLarge
+                )
                 Text(text = shop.address, style = MaterialTheme.typography.titleSmall)
-                Text(shop.mobile +" | " + shop.email,
-                style = MaterialTheme.typography.titleSmall)
+                Text(
+                    shop.mobile + " | " + shop.email,
+                    style = MaterialTheme.typography.titleSmall
+                )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -731,12 +744,10 @@ fun BillReceiptItemReceipt(
                                     .border(1.dp, Color.Gray)
                             )
                         }
-                        val totalAmount = bill.itemList.sumOf {
-                            it.item_amount
-                        }
+                        val totalAmount = bill.itemCollection.total_amount
                         BillItemWithAmountOnBillBelow(
                             data = "Sub Total",
-                            amount = (((totalAmount * bill.itemCollection.tax) / 100) + bill.itemCollection.discount + totalAmount).toString()
+                            amount = (((totalAmount * bill.itemCollection.tax) / 100) + totalAmount).toString()
                         )
                         Divider(
                             modifier = Modifier
@@ -812,6 +823,7 @@ fun BillReceiptItemReceipt(
 fun BillReceiptButtonRow(
     bill: BillItemCollectionWithBillItems,
     customerItem: CustomerItem,
+    userDetails: UserDetails,
     onBillDelete: (BillItemCollectionWithBillItems) -> Unit,
     onPdfClick: () -> Unit,
     onPrintClick: (BillItemCollectionPrint) -> Unit
@@ -824,6 +836,57 @@ fun BillReceiptButtonRow(
         horizontalArrangement = Arrangement.Center
     ) {
 
+        val context = LocalContext.current
+        Box(
+            modifier = Modifier
+                .background(MainColor, RoundedCornerShape(15.dp))
+                .clip(RoundedCornerShape(15.dp))
+                .clickable {
+                    //whatsapp share
+                    var msg = "Dear ${customerItem.name},\n\n" +
+                            "Thanks for your visit at ${userDetails.name}.\n" +
+                            "Total bill amount : Rs ${bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100}\n\n" +
+                            "Bill Item\n"
+                    bill.itemList.forEachIndexed { index, billItem ->
+                        msg += "${index + 1}.${billItem.item_name} - Rs ${billItem.item_amount}\n"
+                    }
+
+                    msg += "\nAmount paid - Rs ${bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount}\n" +
+                            "Payment Mode : ${if (bill.itemCollection.bill_pay_mode.trim() == "Paid by Cash") "Cash" else "Online"}.\n"
+
+                    msg += if(bill.itemCollection.discount > 0.0) "Discount - Rs ${bill.itemCollection.discount}\n" else ""
+                    msg += if(bill.itemCollection.balance_amount > 0.0) "Balance - Rs ${bill.itemCollection.balance_amount}\n" else ""
+
+                    msg += "\nRegards,\nBilling App"
+
+                    val whatsappPackage = "com.whatsapp"
+                    val whatsappBusinessPackage = "com.whatsapp.w4b"
+                    val phone = "+91${customerItem.mobile}"
+
+                    try{
+                        sendWhatsAppMessage(context,msg,phone,whatsappPackage)
+                    }catch (e : PackageManager.NameNotFoundException){
+                        sendWhatsAppMessage(context,msg,phone,whatsappBusinessPackage)
+                    }catch (e : Exception){
+                        e.printStackTrace()
+                    }
+
+                },
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Icon(
+                    painterResource(id = R.drawable.ic_whatsapp), "",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+//                    Text("Print", color = Color.White)
+            }
+        }
+        Spacer(modifier = Modifier.width(10.dp))
         Box(
             modifier = Modifier
                 .background(MainColor, RoundedCornerShape(15.dp))
@@ -904,11 +967,28 @@ fun BillReceiptButtonRow(
         }
     }
 }
+fun sendWhatsAppMessage(context: Context, message: String,phone : String,packageName : String) {
+    val whatsAppTxt = Uri.encode(message) // Encode the message
 
+    // Create the WhatsApp message URI with the formatted message
+    val whatsappUri = Uri.parse("https://api.whatsapp.com/send?phone=$phone&text=$whatsAppTxt")
+
+    // Create an Intent to open the WhatsApp chat
+    val whatsappIntent = Intent(Intent.ACTION_VIEW, whatsappUri)
+    whatsappIntent.setPackage(packageName)
+
+    try {
+        context.startActivity(whatsappIntent)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        // Handle exceptions related to starting the activity
+    }
+}
 @Composable
 fun BillDetails(
     list: List<BillItemCollectionWithBillItems>,
     customerList: List<CustomerItem>,
+    shop: UserDetails,
     onBillDelete: (BillItemCollectionWithBillItems) -> Unit,
     onPdfClick: (String) -> Unit,
     onPrintClick: (BillItemCollectionPrint) -> Unit
@@ -924,6 +1004,7 @@ fun BillDetails(
             BillReceiptItem(
                 bill = bill,
                 customerItem = customerList.filter { it.id == bill.itemCollection.customerid }[0],
+                shop = shop,
                 onBillDelete = {
                     onBillDelete(it)
                 }, onPrintClick = { onPrintClick(it) }) {
