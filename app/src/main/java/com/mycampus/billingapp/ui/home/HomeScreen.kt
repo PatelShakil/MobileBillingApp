@@ -1198,7 +1198,7 @@ fun MainScreenFees(
                             openPrePaymnetDialog.value = false
 
                         }) {
-                            androidx.compose.material3.Text(text = "Pay Fee")
+                            androidx.compose.material3.Text(text = "Pay Bill")
                         }
                     },
                     dismissButton = {
