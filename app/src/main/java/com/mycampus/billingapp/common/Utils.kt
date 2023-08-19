@@ -20,6 +20,8 @@ import kotlin.random.Random
 
 class Utils {
     companion object{
+        const val STORAGE_DIR = "/storage/emulated/0/Download/myCampus"
+        const val BACKUP_DIR = "$STORAGE_DIR/Backup"
     fun generateRandomValue(char : Int): String {
         val characterSet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
         val random = Random(System.currentTimeMillis())
@@ -57,7 +59,7 @@ class Utils {
         }
 
         fun saveFile(filename: String, bitmap: Bitmap) {
-            val storageDir = File("/storage/emulated/0/Download/myCampus")
+            val storageDir = File(STORAGE_DIR)
             val file = File(storageDir.absolutePath + "/$filename.pdf")
             if (!storageDir.exists())
                 storageDir.mkdirs()

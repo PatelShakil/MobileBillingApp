@@ -77,7 +77,6 @@ import java.time.ZoneId
 import kotlin.math.roundToInt
 
 
-
 @Composable
 fun HomeScreen(
     viewModel: UserViewModel,
@@ -85,7 +84,7 @@ fun HomeScreen(
     navController: NavController
 ) {
     val userDetails = viewModel.getUserDetails()
-    var isSettingsExpanded by remember{ mutableStateOf(false) }
+    var isSettingsExpanded by remember { mutableStateOf(false) }
     var itemCol by remember { mutableStateOf(listOf<BillItemCollectionWithBillItems>()) }
     viewModel.allItemCollections.observeForever {
         itemCol = it
@@ -95,7 +94,7 @@ fun HomeScreen(
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        HeaderScreen(userDetails = userDetails ) {
+        HeaderScreen(userDetails = userDetails) {
             isSettingsExpanded = true
         }
         Spacer(modifier = Modifier.height(10.dp))
@@ -181,14 +180,14 @@ fun HomeScreen(
                 onClick = { *//*TODO*//* })*/
             Spacer(modifier = Modifier.height(10.dp))
 
-            var customerCol by remember{ mutableStateOf(listOf<CustomerItem>()) }
+            var customerCol by remember { mutableStateOf(listOf<CustomerItem>()) }
             customerViewModel.allCustomers.observeForever {
                 customerCol = it
             }
 
-            var billItemCollectionPrint by remember{ mutableStateOf<BillItemCollectionPrint?>(null) }
+            var billItemCollectionPrint by remember { mutableStateOf<BillItemCollectionPrint?>(null) }
 
-            if(userDetails != null) {
+            if (userDetails != null) {
                 MainScreenFees(
                     viewModel.getUserDetails() ?: UserDetails(),
                     customerCol,
@@ -216,17 +215,17 @@ fun HomeScreen(
                 }
             }
             var insertResult = viewModel.insertResult.collectAsState()
-            if(insertResult.value){
-                ProgressBarCus(){
+            if (insertResult.value) {
+                ProgressBarCus() {
                 }
             }
             val isInserted = viewModel.isInserted.collectAsState()
-            if(isInserted.value){
+            if (isInserted.value) {
                 ConfirmationDialog(onDismiss = {
                     viewModel.isInserted.value = false
                 }) {
                     //use this object for printing bill receipt
-                    Log.d("Bill Receipt Print",billItemCollectionPrint.toString())
+                    Log.d("Bill Receipt Print", billItemCollectionPrint.toString())
 
                 }
             }
@@ -239,15 +238,16 @@ fun HomeScreen(
                             it.itemCollection.creation_date,
                             "DDMMYY"
                         ) == Utils.convertLongToDate(System.currentTimeMillis(), "DDMMYY")
-                    }.sumOf { bill->
-                        bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount                   }
+                    }.sumOf { bill ->
+                        bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount
+                    }
                 val cashAmount = itemCol.filter {
                     Utils.convertLongToDate(
                         it.itemCollection.creation_date,
                         "DDMMYY"
                     ) == Utils.convertLongToDate(System.currentTimeMillis(), "DDMMYY") &&
                             it.itemCollection.bill_pay_mode == "Paid by Cash"
-                }.sumOf {bill->
+                }.sumOf { bill ->
                     bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount
                 }
                 val onlineAmount = itemCol.filter {
@@ -256,7 +256,7 @@ fun HomeScreen(
                         "DDMMYY"
                     ) == Utils.convertLongToDate(System.currentTimeMillis(), "DDMMYY") &&
                             it.itemCollection.bill_pay_mode != "Paid by Cash"
-                }.sumOf {bill->
+                }.sumOf { bill ->
                     bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount
                 }
                 BottomCard(date, totalAmount, cashAmount, onlineAmount) {
@@ -283,9 +283,34 @@ fun HomeScreen(
 }
 
 @Composable
-fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :String,classname :String, sectionid: String,sectionName :String, name: String, fathername: String, schoolAdmissionNo: String, contactNo: String, gender: String, imageURL:String, navController: NavController,ews:Boolean, rte:Boolean, pwd:Boolean, staffward:Boolean, singlegirlchild:Boolean,isVehileEnabled : Boolean, isNA : Boolean,rollNo : Int,feeAccountNo : Int, onClick: () -> Unit,isAdminSection: Boolean=true) {
-    var counter=0
-    val painter= rememberAsyncImagePainter(model = imageURL)
+fun StudentInfoCard(
+    admissionType: String,
+    studentDBuid: String,
+    classid: String,
+    classname: String,
+    sectionid: String,
+    sectionName: String,
+    name: String,
+    fathername: String,
+    schoolAdmissionNo: String,
+    contactNo: String,
+    gender: String,
+    imageURL: String,
+    navController: NavController,
+    ews: Boolean,
+    rte: Boolean,
+    pwd: Boolean,
+    staffward: Boolean,
+    singlegirlchild: Boolean,
+    isVehileEnabled: Boolean,
+    isNA: Boolean,
+    rollNo: Int,
+    feeAccountNo: Int,
+    onClick: () -> Unit,
+    isAdminSection: Boolean = true
+) {
+    var counter = 0
+    val painter = rememberAsyncImagePainter(model = imageURL)
     val spacing = MaterialTheme.spacing
     val context = LocalContext.current
 
@@ -308,23 +333,29 @@ fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :Strin
 
         Box {
             Row() {
-                Column(modifier = Modifier
-                    .width(10.dp)
-                    .background(
-                        if (gender.lowercase() == "male") Color(0xFFA8D9C5) else Color(0xFF283B5B)
-                    )
-                    .height(155.dp))
+                Column(
+                    modifier = Modifier
+                        .width(10.dp)
+                        .background(
+                            if (gender.lowercase() == "male") Color(0xFFA8D9C5) else Color(
+                                0xFF283B5B
+                            )
+                        )
+                        .height(155.dp)
+                )
                 {
 
                 }
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .background(
-                        if (gender.lowercase() == "male") Color(0xFFD3EAE2) else Color(
-                            0xFFE4E2F8
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .background(
+                            if (gender.lowercase() == "male") Color(0xFFD3EAE2) else Color(
+                                0xFFE4E2F8
+                            )
                         )
-                    )) {
+                ) {
 
                     Row(
                         modifier = Modifier
@@ -499,7 +530,7 @@ fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :Strin
                             }
                         }
                     }
-                    if(isVehileEnabled) {
+                    if (isVehileEnabled) {
                         Image(
                             painter = painterResource(
                                 id = if (gender.lowercase() == "male") R.drawable.quarter_circle_male_trans
@@ -513,7 +544,7 @@ fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :Strin
                     }
                 }
             }
-            if(rollNo > 0) {
+            if (rollNo > 0) {
                 Box(
                     contentAlignment = Center,
                     modifier = Modifier.align(TopEnd)
@@ -530,13 +561,13 @@ fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :Strin
                         text = "${rollNo}",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Black,
-                        color = if(gender.lowercase() == "male") Color.Black
+                        color = if (gender.lowercase() == "male") Color.Black
                         else Color.White,
                         textAlign = TextAlign.Center
                     )
                 }
             }
-            if(isNA){
+            if (isNA) {
                 Box(
                     contentAlignment = Center,
                     modifier = Modifier.align(BottomEnd)
@@ -553,7 +584,7 @@ fun StudentInfoCard(admissionType: String , studentDBuid: String, classid :Strin
                         text = "NA",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Black,
-                        color = if(gender.lowercase() == "male") Color.Black
+                        color = if (gender.lowercase() == "male") Color.Black
                         else Color.White,
                         textAlign = TextAlign.Center,
                         fontSize = 12.sp
@@ -639,11 +670,12 @@ data class CollectFeeData(
 @Composable
 fun MainScreenFees(
     userDetails: UserDetails,
-    customersList : List<CustomerItem>,
+    customersList: List<CustomerItem>,
     onProceedClicked: (List<CollectFeeData>) -> Unit,
     navController: NavController,
     onFeePaid: (BillItemCollection, List<BillItem>) -> Unit,
-    onCustomerAddClicked:(CustomerItem)->Unit) {
+    onCustomerAddClicked: (CustomerItem) -> Unit
+) {
     val context = LocalContext.current
 //    var studentName = viewModel.studentName.collectAsState()
 //    var className = viewModel.className.collectAsState()
@@ -679,9 +711,9 @@ fun MainScreenFees(
             mutableStateOf(1)
         }
         val feeDataList = mutableListOf<CollectFeeData>()
-        var remarks by remember{mutableStateOf("")}
+        var remarks by remember { mutableStateOf("") }
         val dateTime = LocalDateTime.now()
-        var selectedDateTime = remember{ mutableStateOf(dateTime) }
+        var selectedDateTime = remember { mutableStateOf(dateTime) }
 //        val listOfFinalData = mutableListOf<OtherItemsInfo>()
         Column(
             modifier = Modifier
@@ -696,7 +728,7 @@ fun MainScreenFees(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Collect other Fee",
+                    "Create Bill",
 
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f),
@@ -729,49 +761,40 @@ fun MainScreenFees(
             var discountAmount by remember { mutableStateOf(0.0) }
             var taxPer by remember { mutableStateOf(0.0) }
             var totalAmount = 0.0
-            var customerid by remember{mutableStateOf("")}
-            var isCustomerAdd by remember{mutableStateOf(false)}
-            val isSubmitted = remember{mutableStateOf(false)}
+            var customerid by remember { mutableStateOf("") }
+            var isCustomerAdd by remember { mutableStateOf(false) }
+            val isSubmitted = remember { mutableStateOf(false) }
             val itemsList = ArrayList<BillItem>()
-            val selectedCustomer = remember{mutableStateOf(DropDownItemData())}
+            val selectedCustomer = remember { mutableStateOf(DropDownItemData()) }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.weight(.8f)) {
-                    CusDropdownSearch(
-                        selectedItem = selectedCustomer.value,
-                        isSubmitted.value,
-                        label = "Customer",
-                        options = customersList.map { DropDownItemData(it.id.toString(), it.name) }.sortedBy { it.name },
-                        onSelected = {
-                            selectedCustomer.value = it
-                            customerid = it.id
-                        }){
-                        isCustomerAdd = !isCustomerAdd
-                    }
+
+                CusDropdownSearch(
+                    selectedItem = selectedCustomer.value,
+                    isSubmitted.value,
+                    label = "Add/Search Customer",
+                    options = customersList.map { DropDownItemData(it.id.toString(), it.name) }
+                        .sortedBy { it.name },
+                    onSelected = {
+                        selectedCustomer.value = it
+                        customerid = it.id
+                    }) {
+                    isCustomerAdd = !isCustomerAdd
                 }
 
-                Spacer(Modifier.width(10.dp))
-                Icon(imageVector = Icons.Default.Add, contentDescription = "",
-                    modifier = Modifier
-                        .height(30.dp)
-                        .width(30.dp)
-                        .clip(CircleShape)
-                        .border(.5.dp, Gray, CircleShape)
-                        .background(Color.White)
-                        .clickable {
-                            isCustomerAdd = true
-                        })
-                Spacer(modifier = Modifier.width(10.dp))
             }
-            if(isCustomerAdd){
-                AddCustomerPopupScreen(customer = CustomerItem(0,"","","",""), onDismiss = {
+            if (isCustomerAdd) {
+                AddCustomerPopupScreen(customer = CustomerItem(0, "", "", "", ""), onDismiss = {
                     isCustomerAdd = !isCustomerAdd
                 }, onConfirm = {
                     onCustomerAddClicked(it)
                 })
             }
 
-            Box(modifier = Modifier.background(Color(0xFFEBEBEB)).fillMaxWidth().padding(10.dp)) {
+            Box(modifier = Modifier
+                .background(Color(0xFFEBEBEB))
+                .fillMaxWidth()
+                .padding(10.dp)) {
                 Text(
                     "Item Name", modifier = Modifier.align(Alignment.CenterStart),
                     style = MaterialTheme.typography.bodyMedium,
@@ -798,7 +821,7 @@ fun MainScreenFees(
                         mutableStateOf(0.0)
                     }
                     val itemName = remember { mutableStateOf("") }
-                    if(isSubmitted.value){
+                    if (isSubmitted.value) {
                         amount.value = 0.0
                         itemName.value = ""
                         itemsList.clear()
@@ -848,10 +871,10 @@ fun MainScreenFees(
                                 )
                             )
                             Box(modifier = Modifier.weight(.3f)) {
-                                GetAmount(amount.value.roundToInt(),isSubmitted,onAmountSet = {
+                                GetAmount(amount.value.roundToInt(), isSubmitted, onAmountSet = {
                                     amount.value = it.toDouble()
                                     item.item_amount = it.toDouble()
-                                }){
+                                }) {
                                 }
                             }
                             totalAmount += amount.value
@@ -872,20 +895,26 @@ fun MainScreenFees(
                 ) {
                     Spacer(modifier = Modifier.weight(.4f))
                     SampleTextFieldDouble(
-                        label = "Tax", text = taxPer.roundToInt(), isSubmitted = isSubmitted,onAmountSet = {
+                        label = "Tax",
+                        text = taxPer.roundToInt(),
+                        isSubmitted = isSubmitted,
+                        onAmountSet = {
                             taxPer = it.toDouble()
                         },
                         modifier = Modifier.weight(.3f)
-                    ){
+                    ) {
 
                     }
                     Spacer(Modifier.width(10.dp))
                     SampleTextFieldDouble(
-                        label = "Discount", text = taxPer.roundToInt(), isSubmitted = isSubmitted, onAmountSet = {
+                        label = "Discount",
+                        text = taxPer.roundToInt(),
+                        isSubmitted = isSubmitted,
+                        onAmountSet = {
                             discountAmount = it.toDouble()
                         },
                         modifier = Modifier.weight(.3f)
-                    ){
+                    ) {
 
                         isSubmitted.value = false
                     }
@@ -895,17 +924,19 @@ fun MainScreenFees(
                         .fillMaxWidth()
                         .height(1.dp)
                 )
-                TextField(value = remarks, onValueChange = {
-                    remarks = it
-                },
-                modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text("Remarks",style = MaterialTheme.typography.bodySmall)
-                },
-                colors = TextFieldDefaults.textFieldColors(
-                    backgroundColor = Transparent,
-                    focusedIndicatorColor = MainColor
-                ))
+                TextField(
+                    value = remarks, onValueChange = {
+                        remarks = it
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = {
+                        Text("Remarks", style = MaterialTheme.typography.bodySmall)
+                    },
+                    colors = TextFieldDefaults.textFieldColors(
+                        backgroundColor = Transparent,
+                        focusedIndicatorColor = MainColor
+                    )
+                )
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1159,7 +1190,8 @@ fun MainScreenFees(
                                 discountAmount,
                                 remarks,
                                 System.currentTimeMillis(),
-                                selectedDateTime.value.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                                selectedDateTime.value.atZone(ZoneId.systemDefault()).toInstant()
+                                    .toEpochMilli(),
                                 userDetails.name,
                                 false
                             )
@@ -1187,7 +1219,7 @@ fun MainScreenFees(
                             viewModel.payFee()*/
                             taxPer = 0.0
                             totalAmount = 0.0
-                            discountAmount =0.0
+                            discountAmount = 0.0
                             selectedDateTime.value = LocalDateTime.now()
                             isAddClick.value = 1
                             remarks = ""
@@ -1415,7 +1447,6 @@ fun SettingsPopup(
     }
 
 }
-
 
 
 @Composable

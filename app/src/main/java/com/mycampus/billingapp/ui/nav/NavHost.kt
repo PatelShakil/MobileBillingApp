@@ -31,6 +31,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mycampus.billingapp.data.models.UserDetails
+import com.mycampus.billingapp.ui.backuprestore.BackupRestoreScreen
 import com.mycampus.billingapp.ui.customer.CustomerScreen
 import com.mycampus.billingapp.ui.detail.BillDetailScreen
 import com.mycampus.billingapp.ui.home.HomeScreen
@@ -67,8 +68,11 @@ fun AppNavigation(onEnableBluetooth:()-> Unit) {
                     btViewModel.startScan()
                 }
                 btViewModel.startScan()
-            }, onStopScan = btViewModel::stopScan) {
+            }, onStopScan = btViewModel::stopScan,
+                {
                 navController.navigate(Screen.Customer.route)
+            }){
+                navController.navigate(Screen.BackupRestore.route)
             }
 
         NavHost(
@@ -86,7 +90,10 @@ fun AppNavigation(onEnableBluetooth:()-> Unit) {
             composable(Screen.Customer.route){
                 CustomerScreen(viewModel = hiltViewModel(), navController = navController)
                 title = "Customers"
-
+            }
+            composable(Screen.BackupRestore.route){
+                BackupRestoreScreen(viewModel = hiltViewModel())
+                title = "Backup & Restore"
             }
         }
     }
@@ -98,7 +105,8 @@ fun HeaderLayout(
     viewModel: UserViewModel,
     onStartScan: () -> Unit,
     onStopScan: () -> Unit,
-    onCustomerClick:()->Unit
+    onCustomerClick:()->Unit,
+    onBRClick:()->Unit
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
@@ -169,6 +177,15 @@ fun HeaderLayout(
                                 }
                             ) {
                                 Text("Customers")
+                            }
+                            DropdownMenuItem(
+                                onClick = {
+                                    isMenuExpanded = false
+                                    onBRClick()
+                                    // Handle Others menu item click
+                                }
+                            ) {
+                                Text("Backup & Restore")
                             }
                         }
                     }

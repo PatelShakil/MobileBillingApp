@@ -6,6 +6,6 @@ sealed class Screen(val route: String) {
     object Details : Screen("details")
     object Customer : Screen("customer")
 
-    object PDFGen : Screen("pdfgenerator")
+    object BackupRestore : Screen("backuprestore")
     // Add more screens as needed
 }

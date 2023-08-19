@@ -2,11 +2,14 @@ package com.mycampus.billingapp.common.uicomponents
 
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
@@ -16,9 +19,11 @@ import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
@@ -29,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
@@ -181,8 +187,24 @@ fun CusDropdownSearch(
                 searchText = newText
                 selected = null // Clear the selected item
             },
+            leadingIcon = {
+                          Icon(Icons.Default.Search,"")
+            },
+            trailingIcon = {
+                androidx.compose.material3.Icon(imageVector = Icons.Default.Add,
+                    contentDescription = "",
+                    modifier = Modifier
+                        .height(30.dp)
+                        .width(30.dp)
+                        .clip(CircleShape)
+                        .border(.5.dp, Color.Gray, CircleShape)
+                        .background(Color.White)
+                        .clickable {
+                            onCreate()
+                        })
+            },
             label = { Text(label, style = MaterialTheme.typography.bodySmall) },
-            textStyle = LocalTextStyle.current.copy(color = Color.Black, fontSize = 16.sp)
+            textStyle = LocalTextStyle.current.copy(color = Color.Black, fontSize = 16.sp),
         )
 
         // Show suggestions below the text field

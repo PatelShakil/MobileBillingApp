@@ -152,6 +152,10 @@ fun SearchBar(onTextChanged: (String) -> Unit) {
                         )
                     }
                 },
+                label = {
+                              Text("Search Customer",
+                              style = MaterialTheme.typography.titleSmall)
+                },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = TextFieldDefaults.textFieldColors(
                     focusedIndicatorColor = Color.Transparent,
