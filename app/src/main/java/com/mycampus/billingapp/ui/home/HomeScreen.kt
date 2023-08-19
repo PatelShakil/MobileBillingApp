@@ -57,7 +57,10 @@ import com.mycampus.billingapp.common.uicomponents.ConfirmationDialog
 import com.mycampus.billingapp.common.uicomponents.CusDropdownSearch
 import com.mycampus.billingapp.common.uicomponents.DateTimePicker
 import com.mycampus.billingapp.common.uicomponents.DropDownItemData
+import com.mycampus.billingapp.common.uicomponents.GetAmount
 import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
+import com.mycampus.billingapp.common.uicomponents.SampleTextFieldDouble
+import com.mycampus.billingapp.common.uicomponents.SettingsTextFieldSample
 import com.mycampus.billingapp.data.models.BillItemCollectionPrint
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.data.room.entities.BillItem
@@ -185,30 +188,32 @@ fun HomeScreen(
 
             var billItemCollectionPrint by remember{ mutableStateOf<BillItemCollectionPrint?>(null) }
 
-            MainScreenFees(
-                viewModel.getUserDetails() ?: UserDetails(),
-                customerCol,
-                onProceedClicked = {},
-                navController = NavController(LocalContext.current) ,{ billCol, list ->
-                    billItemCollectionPrint = BillItemCollectionPrint(
-                        billCol.id,
-                        customerCol.filter { it.id == billCol.customerid }[0],
-                        billCol.bill_no,
-                        billCol.bill_pay_mode,
-                        billCol.tax,
-                        billCol.total_amount,
-                        billCol.paid_amount,
-                        billCol.balance_amount,
-                        billCol.discount,
-                        billCol.remarks,
-                        billCol.creation_date,
-                        billCol.created_by,
-                        list,
-                        billCol.is_sync
-                    )
-                viewModel.addItemCollection(billCol, list)
-                }){
-                customerViewModel.addCustomer(it)
+            if(userDetails != null) {
+                MainScreenFees(
+                    viewModel.getUserDetails() ?: UserDetails(),
+                    customerCol,
+                    onProceedClicked = {},
+                    navController = NavController(LocalContext.current), { billCol, list ->
+                        billItemCollectionPrint = BillItemCollectionPrint(
+                            billCol.id,
+                            customerCol.filter { it.id == billCol.customerid }[0],
+                            billCol.bill_no,
+                            billCol.bill_pay_mode,
+                            billCol.tax,
+                            billCol.total_amount,
+                            billCol.paid_amount,
+                            billCol.balance_amount,
+                            billCol.discount,
+                            billCol.remarks,
+                            billCol.creation_date,
+                            billCol.created_by,
+                            list,
+                            billCol.is_sync
+                        )
+                        viewModel.addItemCollection(billCol, list)
+                    }) {
+                    customerViewModel.addCustomer(it)
+                }
             }
             var insertResult = viewModel.insertResult.collectAsState()
             if(insertResult.value){
@@ -726,13 +731,19 @@ fun MainScreenFees(
             var totalAmount = 0.0
             var customerid by remember{mutableStateOf("")}
             var isCustomerAdd by remember{mutableStateOf(false)}
+            val isSubmitted = remember{mutableStateOf(false)}
+            val itemsList = ArrayList<BillItem>()
+            val selectedCustomer = remember{mutableStateOf(DropDownItemData())}
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(.8f)) {
                     CusDropdownSearch(
+                        selectedItem = selectedCustomer.value,
+                        isSubmitted.value,
                         label = "Customer",
                         options = customersList.map { DropDownItemData(it.id.toString(), it.name) }.sortedBy { it.name },
                         onSelected = {
+                            selectedCustomer.value = it
                             customerid = it.id
                         }){
                         isCustomerAdd = !isCustomerAdd
@@ -760,14 +771,14 @@ fun MainScreenFees(
                 })
             }
 
-            Box(modifier = Modifier.fillMaxWidth(.94f), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.background(Color(0xFFEBEBEB)).fillMaxWidth().padding(10.dp)) {
                 Text(
-                    "Item Name", modifier = Modifier.align(Alignment.TopStart),
+                    "Item Name", modifier = Modifier.align(Alignment.CenterStart),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    "Item Amount", modifier = Modifier.align(Alignment.TopEnd),
+                    "Item Amount", modifier = Modifier.align(Alignment.CenterEnd),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                 )
@@ -777,13 +788,21 @@ fun MainScreenFees(
                     .fillMaxWidth()
                     .height(1.dp)
             )
-            val itemsList = ArrayList<BillItem>()
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 repeat(isAddClick.value) {
+                    val amount = remember {
+                        mutableStateOf(0.0)
+                    }
+                    val itemName = remember { mutableStateOf("") }
+                    if(isSubmitted.value){
+                        amount.value = 0.0
+                        itemName.value = ""
+                        itemsList.clear()
+                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
@@ -800,10 +819,7 @@ fun MainScreenFees(
                                 )
                             )
                         }
-                        val amount = remember {
-                            mutableStateOf(0.0)
-                        }
-                        val itemName = remember { mutableStateOf("") }
+
                         Row(
                             modifier = Modifier.fillMaxWidth(.95f),
                             verticalAlignment = Alignment.CenterVertically
@@ -832,11 +848,11 @@ fun MainScreenFees(
                                 )
                             )
                             Box(modifier = Modifier.weight(.3f)) {
-                                getAmount(onAmountSet = {
+                                GetAmount(amount.value.roundToInt(),isSubmitted,onAmountSet = {
                                     amount.value = it.toDouble()
                                     item.item_amount = it.toDouble()
-
-                                })
+                                }){
+                                }
                             }
                             totalAmount += amount.value
                             itemsList.add(item)
@@ -856,18 +872,23 @@ fun MainScreenFees(
                 ) {
                     Spacer(modifier = Modifier.weight(.4f))
                     SampleTextFieldDouble(
-                        label = "Tax", text = 0, onAmountSet = {
+                        label = "Tax", text = taxPer.roundToInt(), isSubmitted = isSubmitted,onAmountSet = {
                             taxPer = it.toDouble()
                         },
                         modifier = Modifier.weight(.3f)
-                    )
+                    ){
+
+                    }
                     Spacer(Modifier.width(10.dp))
                     SampleTextFieldDouble(
-                        label = "Discount", text = 0, onAmountSet = {
+                        label = "Discount", text = taxPer.roundToInt(), isSubmitted = isSubmitted, onAmountSet = {
                             discountAmount = it.toDouble()
                         },
                         modifier = Modifier.weight(.3f)
-                    )
+                    ){
+
+                        isSubmitted.value = false
+                    }
                 }
                 Divider(
                     modifier = Modifier
@@ -1142,6 +1163,7 @@ fun MainScreenFees(
                                 userDetails.name,
                                 false
                             )
+
                             onFeePaid(billCol, itemsList)
                             //Call API here
                             /*if(isOnileModeChecked.value)
@@ -1163,6 +1185,16 @@ fun MainScreenFees(
                             otherItems.add((OtherItem(otheritemsinfo=listOfFinalData)))
                             viewModel.feePayInfo.value.otheritems=otherItems
                             viewModel.payFee()*/
+                            taxPer = 0.0
+                            totalAmount = 0.0
+                            discountAmount =0.0
+                            selectedDateTime.value = LocalDateTime.now()
+                            isAddClick.value = 1
+                            remarks = ""
+                            isSubmitted.value = true
+                            customerid = ""
+                            selectedCustomer.value = DropDownItemData()
+                            isOnileModeChecked.value = false
                             openPrePaymnetDialog.value = false
 
                         }) {
@@ -1384,32 +1416,7 @@ fun SettingsPopup(
 
 }
 
-@Composable
-fun SettingsTextFieldSample(
-    label: String,
-    value: String = "",
-    onTextChanged: (String) -> Unit,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    lineCount: Int = 1
-) {
-    var value by remember { mutableStateOf(value) }
-    androidx.compose.material.TextField(
-        value = value,
-        onValueChange = {
-            onTextChanged(it)
-            value = it
-        },
-        modifier = Modifier.fillMaxWidth(.95f),
-        label = { Text(label, style = MaterialTheme.typography.titleSmall) },
-        colors = TextFieldDefaults.textFieldColors(
-            backgroundColor = Color(0xFFEAE8F0),
-            focusedIndicatorColor = MainColor
-        ),
-        minLines = lineCount,
-        singleLine = lineCount <= 1,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
-    )
-}
+
 
 @Composable
 fun PrinterPopup(
@@ -1543,55 +1550,4 @@ fun BTDeviceItem(device: BluetoothDevice, onClick: (BluetoothDevice) -> Unit) {
         )
     }
 
-}
-
-@Composable
-fun getAmount(onAmountSet: (Int) -> Unit) {
-    var value by remember { mutableStateOf(0) }
-    TextField(
-        value = if (value == 0) "" else value.toString(),
-        onValueChange = {
-            if (it.isEmpty()) {
-                value = 0
-                onAmountSet(value)
-            } else {
-                value = it.toInt()
-                onAmountSet(value)
-            }
-        },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Number,
-            imeAction = ImeAction.Done
-        ),
-        modifier = Modifier,
-        label = { Text("Amount", style = MaterialTheme.typography.bodySmall) },
-        colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.White)
-    )
-}
-
-@Composable
-fun SampleTextFieldDouble(
-    modifier: Modifier = Modifier,
-    label: String,
-    text: Int,
-    onAmountSet: (Int) -> Unit
-) {
-    var value by remember { mutableStateOf(text) }
-    TextField(
-        value = if (value == 0) "" else value.toString(),
-        modifier = modifier,
-        onValueChange = {
-            if (it.isEmpty()) {
-                value = 0
-                onAmountSet(value)
-            } else {
-                value = it.toInt()
-                onAmountSet(value)
-            }
-        },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        label = { Text(label, style = MaterialTheme.typography.bodySmall) },
-        colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.White)
-    )
 }

@@ -22,6 +22,7 @@ import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -68,14 +69,12 @@ fun CustomerScreen(viewModel : CustomerViewModel,navController: NavController) {
     Box(modifier = Modifier.fillMaxSize()) {
 
         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Spacer(modifier = Modifier.height(5.dp))
             SearchBar(onTextChanged = {value ->
                 customerCol = if(value.isNotEmpty())
                     customerColOg.filter { it.name.lowercase().contains(value.lowercase()) }
                 else
                     customerColOg
             })
-            Spacer(modifier = Modifier.height(5.dp))
             if(customerCol.isNotEmpty()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -122,26 +121,45 @@ fun CustomerScreen(viewModel : CustomerViewModel,navController: NavController) {
 @Composable
 fun SearchBar(onTextChanged: (String) -> Unit) {
     var value by remember{ mutableStateOf("") }
-    Card(modifier = Modifier.fillMaxWidth(.9f),
-    border = BorderStroke(.5.dp, Color.Gray),
-        elevation = CardDefaults.cardElevation(
-            18.dp
-        )
-    ){
-        TextField(value = value, onValueChange = {
-            value = it
-            onTextChanged(value)
-        },
-        trailingIcon = {
-            Icon(Icons.Default.Search, contentDescription = "",
-            tint = MainColor)
-        },
-        modifier = Modifier.fillMaxWidth(),
-        colors = TextFieldDefaults.textFieldColors(
-            focusedIndicatorColor = Color.Transparent,
-            backgroundColor = LightMainColor,
-            cursorColor = MainColor
-        ))
+    Column(modifier = Modifier.fillMaxWidth().background(LightMainColor),
+    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Card(
+            modifier = Modifier.fillMaxWidth(.9f).padding(vertical = 15.dp),
+            border = BorderStroke(.5.dp, Color.Gray),
+            elevation = CardDefaults.cardElevation(
+                18.dp
+            )
+        ) {
+            TextField(
+                value = value, onValueChange = {
+                    value = it
+                    onTextChanged(value)
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Search, contentDescription = "",
+                        tint = MainColor
+                    )
+                },
+                trailingIcon = {
+                    if(value.isNotEmpty()) {
+                        Icon(
+                            Icons.Default.Clear, "",
+                            tint = MainColor,
+                            modifier = Modifier.clickable {
+                                value = ""
+                            }
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                colors = TextFieldDefaults.textFieldColors(
+                    focusedIndicatorColor = Color.Transparent,
+                    backgroundColor = Color.White,
+                    cursorColor = MainColor
+                )
+            )
+        }
     }
 
 }
@@ -188,7 +206,7 @@ fun CustomerItemSample(customer: CustomerItem) {
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 5.dp,end = 5.dp)
+                        .padding(start = 5.dp, end = 5.dp)
                         .background(Color.White), // Just for visualization, to see the boundaries of the Text composable
                     softWrap = true,
                     maxLines = Int.MAX_VALUE // Allow unlimited lines

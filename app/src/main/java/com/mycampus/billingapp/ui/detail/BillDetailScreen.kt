@@ -364,6 +364,7 @@ fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> 
                             }, modifier = Modifier.fillMaxWidth(.8f)) {
                                 Text(text = "Apply")
                             }
+                            Spacer(modifier = Modifier.height(10.dp))
                         }
                     }
                 }
@@ -469,7 +470,9 @@ fun BillReceiptItem(
                         .border(1.dp, Color.Gray)
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFEBEBEB)),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -521,8 +524,8 @@ fun BillReceiptItem(
                         .border(1.dp, Color.Gray)
                 )
                 BillItemWithAmountOnBillBelow(
-                    data = "Tax",
-                    amount = ((totalAmount * bill.itemCollection.tax) / 100).toString() + " ( @ ${bill.itemCollection.tax.roundToInt()}% )"
+                    data = "Tax" + " (@${bill.itemCollection.tax.roundToInt()}%)",
+                    amount = ((totalAmount * bill.itemCollection.tax) / 100).toString()
                 )
                 Divider(
                     modifier = Modifier
@@ -550,7 +553,9 @@ fun BillReceiptItem(
                 Text(
                     "Payment mode : " + if (bill.itemCollection.bill_pay_mode.trim() == "Paid by Cash") "Cash" else "Online",
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(start = 5.dp)
+                    modifier = Modifier
+                        .padding(start = 5.dp)
+                        .padding(vertical = 6.dp),
                 )
                 Divider(
                     modifier = Modifier
@@ -560,7 +565,9 @@ fun BillReceiptItem(
                 Text(
                     "*" + bill.itemCollection.remarks,
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(start = 5.dp),
+                    modifier = Modifier
+                        .padding(start = 5.dp)
+                        .padding(vertical = 6.dp),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -703,7 +710,9 @@ fun BillReceiptItemReceipt(
                                 .border(1.dp, Color.Gray)
                         )
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFEBEBEB)),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -755,8 +764,8 @@ fun BillReceiptItemReceipt(
                                 .border(1.dp, Color.Gray)
                         )
                         BillItemWithAmountOnBillBelow(
-                            data = "Tax",
-                            amount = ((totalAmount * bill.itemCollection.tax) / 100).toString() + " ( @ ${bill.itemCollection.tax.roundToInt()}% )"
+                            data = "Tax" + " (@${bill.itemCollection.tax.roundToInt()}%)",
+                            amount = ((totalAmount * bill.itemCollection.tax) / 100).toString()
                         )
                         Divider(
                             modifier = Modifier
@@ -784,7 +793,9 @@ fun BillReceiptItemReceipt(
                         Text(
                             "Payment mode : " + if (bill.itemCollection.bill_pay_mode.trim() == "Paid by Cash") "Cash" else "Online",
                             fontSize = 12.sp,
-                            modifier = Modifier.padding(start = 5.dp)
+                            modifier = Modifier
+                                .padding(start = 5.dp)
+                                .padding(vertical = 6.dp)
                         )
                         Divider(
                             modifier = Modifier
@@ -794,7 +805,9 @@ fun BillReceiptItemReceipt(
                         Text(
                             "*" + bill.itemCollection.remarks,
                             fontSize = 12.sp,
-                            modifier = Modifier.padding(start = 5.dp),
+                            modifier = Modifier
+                                .padding(start = 5.dp)
+                                .padding(vertical = 6.dp),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -854,8 +867,8 @@ fun BillReceiptButtonRow(
                     msg += "\nAmount paid - Rs ${bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount}\n" +
                             "Payment Mode : ${if (bill.itemCollection.bill_pay_mode.trim() == "Paid by Cash") "Cash" else "Online"}.\n"
 
-                    msg += if(bill.itemCollection.discount > 0.0) "Discount - Rs ${bill.itemCollection.discount}\n" else ""
-                    msg += if(bill.itemCollection.balance_amount > 0.0) "Balance - Rs ${bill.itemCollection.balance_amount}\n" else ""
+                    msg += if (bill.itemCollection.discount > 0.0) "Discount - Rs ${bill.itemCollection.discount}\n" else ""
+                    msg += if (bill.itemCollection.balance_amount > 0.0) "Balance - Rs ${bill.itemCollection.balance_amount}\n" else ""
 
                     msg += "\nRegards,\nBilling App"
 
@@ -863,11 +876,11 @@ fun BillReceiptButtonRow(
                     val whatsappBusinessPackage = "com.whatsapp.w4b"
                     val phone = "+91${customerItem.mobile}"
 
-                    try{
-                        sendWhatsAppMessage(context,msg,phone,whatsappPackage)
-                    }catch (e : PackageManager.NameNotFoundException){
-                        sendWhatsAppMessage(context,msg,phone,whatsappBusinessPackage)
-                    }catch (e : Exception){
+                    try {
+                        sendWhatsAppMessage(context, msg, phone, whatsappPackage)
+                    } catch (e: PackageManager.NameNotFoundException) {
+                        sendWhatsAppMessage(context, msg, phone, whatsappBusinessPackage)
+                    } catch (e: Exception) {
                         e.printStackTrace()
                     }
 

@@ -6,7 +6,6 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.data.repo.BillRepository
-import com.mycampus.billingapp.data.repo.CustomerRepository
 import com.mycampus.billingapp.data.repo.UserRepository
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
@@ -19,8 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class UserViewModel @Inject constructor(
     private val userRepository: UserRepository,
-private val billingRepository : BillRepository,
-private val customerRepository: CustomerRepository
+private val billingRepository : BillRepository
 ) : ViewModel() {
 
     fun saveUserDetails(userDetails: UserDetails) = viewModelScope.launch{

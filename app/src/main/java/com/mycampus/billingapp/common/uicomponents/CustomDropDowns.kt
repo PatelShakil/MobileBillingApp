@@ -150,13 +150,20 @@ fun CusDropdownSearchOld(
 }
 @Composable
 fun CusDropdownSearch(
+    selectedItem : DropDownItemData,
+    isSubmit:Boolean,
     label: String,
     options: List<DropDownItemData>,
     onSelected: (DropDownItemData) -> Unit,
     onCreate: () -> Unit
 ) {
     var searchText by remember { mutableStateOf("") }
-    var selected by remember { mutableStateOf<DropDownItemData?>(null) }
+    var selected by remember { mutableStateOf<DropDownItemData?>(selectedItem) }
+
+    if(selectedItem == DropDownItemData() && isSubmit){
+        selected = DropDownItemData()
+        searchText = ""
+    }
 
     val filteredOptions = options.filter {
         it.name.contains(searchText, ignoreCase = true)
