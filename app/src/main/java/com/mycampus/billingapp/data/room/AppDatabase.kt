@@ -82,12 +82,12 @@ abstract class AppDatabase : RoomDatabase() {
 
     suspend fun backupDatabase(billitemCols : List<BillItemCollection>,billitems:List<BillItem>,customers : List<CustomerItem>,context: Context) {
 
-        val backupDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),"/BillingApp/Backup")
+        val backupDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),"/myCampus/Backup")
         if(!backupDir.exists())
             backupDir.mkdirs()
-        var backupBillItemCSVFile =  File(backupDir.absolutePath + "/billitems.csv")
-        var backupBillItemsColCSVFile =  File(backupDir.absolutePath + "/billitemsCol.csv")
-        var backupCustomersCSVFile =  File(backupDir.absolutePath + "/customers.csv")
+        var backupBillItemCSVFile =  File(backupDir.absolutePath + "/billitems.backup")
+        var backupBillItemsColCSVFile =  File(backupDir.absolutePath + "/billitemsCol.backup")
+        var backupCustomersCSVFile =  File(backupDir.absolutePath + "/customers.backup")
 
         if(!backupBillItemCSVFile.exists())
             backupBillItemCSVFile.createNewFile()
@@ -144,9 +144,9 @@ abstract class AppDatabase : RoomDatabase() {
     // Restore the database from a backup file
     suspend fun restoreDatabase(context: Context) {
         val backupDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),"/BillingApp/Backup")
-        var backupBillItemCSVFile =  File(backupDir.absolutePath + "/billitems.csv")
-        var backupBillItemsColCSVFile =  File(backupDir.absolutePath + "/billitemsCol.csv")
-        var backupCustomersCSVFile =  File(backupDir.absolutePath + "/customers.csv")
+        var backupBillItemCSVFile =  File(backupDir.absolutePath + "/billitems.backup")
+        var backupBillItemsColCSVFile =  File(backupDir.absolutePath + "/billitemsCol.backup")
+        var backupCustomersCSVFile =  File(backupDir.absolutePath + "/customers.backup")
 
         if(backupBillItemsColCSVFile.exists()){
             try {
