@@ -30,12 +30,18 @@ interface RoomDao {
     @Delete
     suspend fun deleteBillItem(item: BillItem)
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBillItemCollection(billItemCollection: BillItemCollection): Long
 
     @Query("SELECT * FROM customer_item")
     fun getAllCustomers():Flow<List<CustomerItem>>
 
+    @Query("SELECT * FROM billitemcol")
+    fun getAllBillItemsCol():Flow<List<BillItemCollection>>
+
+    @Query("SELECT * FROM bill_item")
+    fun getAllBillItems():Flow<List<BillItem>>
+    
     @Transaction
     @Query("SELECT * FROM billitemcol")
     fun getAllItemCollectionsWithBillItems(): Flow<List<BillItemCollectionWithBillItems>>

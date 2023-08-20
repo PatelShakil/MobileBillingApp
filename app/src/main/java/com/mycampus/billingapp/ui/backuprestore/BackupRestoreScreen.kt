@@ -5,64 +5,68 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.mycampus.billingapp.common.Utils.Companion.BACKUP_DIR
-import com.mycampus.billingapp.common.Utils.Companion.convertLongToDate
-import java.io.File
+import com.mycampus.billingapp.data.room.entities.BillItem
+import com.mycampus.billingapp.data.room.entities.BillItemCollection
+import com.mycampus.billingapp.data.room.entities.CustomerItem
+import com.mycampus.billingapp.ui.home.MainColor
 
 
 @Composable
 fun BackupRestoreScreen(viewModel: BackupRestoreViewModel) {
-    val backupFileName by remember { mutableStateOf("billingapp_database_${convertLongToDate(System.currentTimeMillis(),"dd_MM_yyyy")}") }
-    val backupDir = File(BACKUP_DIR)
-    if(!backupDir.exists())
-        backupDir.mkdirs()
     val context = LocalContext.current
-
+    var billitemsCol: List<BillItemCollection>? = null
+    viewModel.billitemsCol.observeForever {
+        billitemsCol = it
+    }
+    var billitems : List<BillItem> ? = null
+    viewModel.billitems.observeForever {
+        billitems = it
+    }
+    var customers : List<CustomerItem> ? = null
+    viewModel.customers.observeForever {
+        customers = it
+    }
     Column(
-        modifier = Modifier.padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.fillMaxSize(.95f).padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Button(onClick = {
-            val backupFile = File( "$BACKUP_DIR/$backupFileName.db")
-            if(!backupFile.exists())
-                backupFile.createNewFile()
-
-            viewModel.backupDatabase(context,backupFile)
+            viewModel.backupDatabase(billitemsCol!!,billitems!!,customers!!,context)
             // Show a message that backup was successful
-        }) {
+        },
+            modifier = Modifier.fillMaxWidth(.8f),
+            colors= ButtonDefaults.buttonColors(
+                MainColor
+            )) {
             Text("Backup Database")
         }
 
-        val getContent = rememberGetContentContractLauncher(onResult = {
-            if(it != null){
-                if(validFile(context,it)){
-                    viewModel.restoreDatabaseFromUri(context,it)
-                }else{
-                    Toast.makeText(context,"Choose Valid Backup File", Toast.LENGTH_SHORT).show()
-                }
-            }
-        })
         Button(onClick = {
-//            getContent.launch("*/*")
-            viewModel.restoreDatabase(context,File("$BACKUP_DIR/billingapp_database_20_08_2023.db"))
-            // Show a message that restore was successful
-        }) {
+            viewModel.restoreDatabase(context)
+        // Show a message that restore was successful
+        },
+            modifier = Modifier.fillMaxWidth(.8f),
+            colors= ButtonDefaults.buttonColors(
+                MainColor
+            )) {
             Text("Restore Database")
         }
     }

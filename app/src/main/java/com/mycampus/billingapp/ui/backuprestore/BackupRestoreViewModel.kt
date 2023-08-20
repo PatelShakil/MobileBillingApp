@@ -1,48 +1,37 @@
 package com.mycampus.billingapp.ui.backuprestore
 
 import android.content.Context
-import android.net.Uri
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.mycampus.billingapp.data.room.AppDatabase
+import com.mycampus.billingapp.data.room.RoomDao
+import com.mycampus.billingapp.data.room.entities.BillItem
+import com.mycampus.billingapp.data.room.entities.BillItemCollection
+import com.mycampus.billingapp.data.room.entities.CustomerItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import java.io.File
-import java.io.FileOutputStream
 import javax.inject.Inject
 
 
 @HiltViewModel
-class BackupRestoreViewModel @Inject constructor(private val appDatabase: AppDatabase) :
+class BackupRestoreViewModel @Inject constructor(private val appDatabase: AppDatabase,private val dao:RoomDao) :
 ViewModel(){
 
 
-    fun backupDatabase(context : Context,backupFile: File) {
+
+    val billitemsCol = dao.getAllBillItemsCol().asLiveData()
+    val billitems = dao.getAllBillItems().asLiveData()
+    val customers = dao.getAllCustomers().asLiveData()
+    fun backupDatabase(billitemCols : List<BillItemCollection>, billitems:List<BillItem>, customers : List<CustomerItem>, context : Context) {
         viewModelScope.launch {
-            appDatabase.backupDatabase(context,backupFile)
-        }
-    }
-    fun restoreDatabaseFromUri(context:Context,uri: Uri) {
-        viewModelScope.launch {
-            val inputStream = context.contentResolver.openInputStream(uri)
-
-            inputStream?.use {
-                val backupFile = File(context.cacheDir, "restored_database.db")
-                val outputStream = FileOutputStream(backupFile)
-                inputStream.copyTo(outputStream)
-                outputStream.close()
-
-                appDatabase.restoreDatabase(context,backupFile)
-
-                // Optionally, you can delete the temporary backup file after restore
-                backupFile.delete()
-            }
+            appDatabase.backupDatabase(billitemCols,billitems,customers,context)
         }
     }
 
-    fun restoreDatabase(context:Context,backupFile: File) {
+    fun restoreDatabase(context:Context) {
         viewModelScope.launch {
-            appDatabase.restoreDatabase(context,backupFile)
+            appDatabase.restoreDatabase(context)
         }
     }
 
