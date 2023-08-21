@@ -143,10 +143,10 @@ abstract class AppDatabase : RoomDatabase() {
     }
     // Restore the database from a backup file
     suspend fun restoreDatabase(context: Context) {
-        val backupDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),"/BillingApp/Backup")
+        val backupDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),"/myCampus/Backup")
         var backupBillItemCSVFile =  File(backupDir.absolutePath + "/billitems.backup")
         var backupBillItemsColCSVFile =  File(backupDir.absolutePath + "/billitemsCol.backup")
-        var backupCustomersCSVFile =  File(backupDir.absolutePath + "/customers.backup")
+        var backupCustomersCSVFile = File(backupDir.absolutePath + "/customers.backup")
 
         if(backupBillItemsColCSVFile.exists()){
             try {
@@ -174,7 +174,7 @@ abstract class AppDatabase : RoomDatabase() {
                 Toast.makeText(context, "Backup Restored Successfully", Toast.LENGTH_SHORT).show()
             }catch (e : Exception){
                 e.printStackTrace()
-                Toast.makeText(context, e.localizedMessage, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
             }
         }
     }
