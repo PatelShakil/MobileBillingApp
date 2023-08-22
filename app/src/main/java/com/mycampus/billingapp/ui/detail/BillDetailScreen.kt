@@ -5,8 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.net.Uri
 import android.util.Log
+import android.widget.ScrollView
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -81,7 +83,9 @@ import com.mycampus.billingapp.ui.home.UserViewModel
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -237,15 +241,38 @@ fun BillDetailScreen(
 
                 val briView = ComposeView(context).apply {
                     setContent {
-                        BillReceiptItemReceipt(
-                            bill = billItems, customerItem = customerItem,
-                            shop = user!!
-                        )
+                            BillReceiptItemReceipt(
+                                bill = billItems, customerItem = customerItem,
+                                shop = user!!
+                            )
                     }
                 }
 
                 var isViewLaidOut by remember { mutableStateOf(false) }
-                AndroidView(factory = { briView })
+//                ScrollableCapturable(controller = rememberCaptureController(), onCaptured ={bitmap , e ->
+//                    if(e == null) {
+//                        GlobalScope.launch {
+//                            delay(2000)
+//                            val filename = billItems.itemCollection.bill_no + convertLongToDate(
+//                                billItems.itemCollection.creation_date,
+//                                "_dd_MM_yyyy"
+//                            )
+//                            if (bitmap != null) {
+//                                saveFile(filename, bitmap)
+//                                viewPdf(context as Activity, filename)
+//                                isPdfClick = !isPdfClick
+//                            }else{
+//                                isPdfClick = !isPdfClick
+//                            }
+//                        }
+//                    }else{
+//                        Log.d("ERROR",e.toString())
+//                    }
+//
+//                } ) {
+//                    AndroidView(factory = { briView })
+//                }
+                AndroidView(factory = {briView})
                 briView.viewTreeObserver.addOnGlobalLayoutListener {
                     if (!isViewLaidOut) {
                         isViewLaidOut = true
@@ -285,6 +312,80 @@ fun BillDetailScreen(
     }
 }
 
+//        implementation "dev.shreyaspatil:capturable:1.0.3"
+
+
+
+@Composable
+fun ScrollableCapturable(
+    modifier: Modifier = Modifier,
+    controller: CaptureController,
+    onCaptured: (Bitmap?, Throwable?) -> Unit,
+    content: @Composable () -> Unit
+) {
+    AndroidView(
+        factory = { context ->
+            val scrollView = ScrollView(context)
+            val composeView = ComposeView(context).apply {
+                setContent {
+                    content()
+                }
+            }
+            scrollView.addView(composeView)
+            scrollView
+        },
+        update = { scrollView ->
+            if (controller.readyForCapture) {
+                // Hide scrollbars for capture
+                scrollView.isVerticalScrollBarEnabled = false
+                scrollView.isHorizontalScrollBarEnabled = false
+                try {
+                    val bitmap = loadBitmapFromScrollView(scrollView)
+                    onCaptured(bitmap, null)
+                } catch (throwable: Throwable) {
+                    onCaptured(null, throwable)
+                }
+                scrollView.isVerticalScrollBarEnabled = true
+                scrollView.isHorizontalScrollBarEnabled = true
+                controller.captured()
+            }
+        },
+        modifier = modifier
+    )
+}
+
+/**
+ * Need to use view.getChildAt(0).height instead of just view.height,
+ * so you can get all ScrollView content.
+ */
+private fun loadBitmapFromScrollView(scrollView: ScrollView): Bitmap {
+    val bitmap = Bitmap.createBitmap(
+        scrollView.width,
+        scrollView.getChildAt(0).height,
+        Bitmap.Config.ARGB_8888
+    )
+    val canvas = Canvas(bitmap)
+    scrollView.draw(canvas)
+    return bitmap
+}
+
+class CaptureController {
+    var readyForCapture by mutableStateOf(false)
+        private set
+
+    fun capture() {
+        readyForCapture = true
+    }
+
+    internal fun captured() {
+        readyForCapture = false
+    }
+}
+
+@Composable
+fun rememberCaptureController(): CaptureController {
+    return remember { CaptureController() }
+}
 
 @Composable
 fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> Unit) {
@@ -373,6 +474,29 @@ fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> 
     }
 }
 
+fun getFileAttributes(filePath: String) {
+    val file = File(filePath)
+
+    if (file.exists()) {
+        val absolutePath = file.absolutePath
+        val fileName = file.name
+        val isDirectory = file.isDirectory
+        val fileSize = file.length()
+        val lastModifiedTimestamp = file.lastModified()
+        val sdf = SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault())
+        val creationDate = sdf.format(Date(lastModifiedTimestamp))
+        val lastModifiedDate = sdf.format(Date(lastModifiedTimestamp))
+
+        println("File Path: $absolutePath")
+        println("File Name: $fileName")
+        println("Is Directory: $isDirectory")
+        println("File Size: $fileSize bytes")
+        println("Creation Date: $creationDate")
+        println("Last Modified Date: $lastModifiedDate")
+    } else {
+        println("File not found.")
+    }
+}
 
 @Composable
 fun BillReceiptItem(

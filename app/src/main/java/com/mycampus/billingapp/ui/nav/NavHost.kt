@@ -1,17 +1,23 @@
 package com.mycampus.billingapp.ui.nav
 
 import android.bluetooth.BluetoothManager
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.DropdownMenu
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,15 +29,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.mycampus.billingapp.R
+import com.mycampus.billingapp.common.uicomponents.RestoreConfirmationDialog
 import com.mycampus.billingapp.data.models.UserDetails
+import com.mycampus.billingapp.data.room.entities.BillItem
+import com.mycampus.billingapp.data.room.entities.BillItemCollection
+import com.mycampus.billingapp.data.room.entities.CustomerItem
 import com.mycampus.billingapp.ui.backuprestore.BackupRestoreScreen
+import com.mycampus.billingapp.ui.backuprestore.BackupRestoreViewModel
 import com.mycampus.billingapp.ui.customer.CustomerScreen
 import com.mycampus.billingapp.ui.detail.BillDetailScreen
 import com.mycampus.billingapp.ui.home.HomeScreen
@@ -43,7 +57,7 @@ import com.mycampus.billingapp.ui.home.bluetooth.BluetoothUiState
 import com.mycampus.billingapp.ui.home.bluetooth.BluetoothViewModel
 
 @Composable
-fun AppNavigation(onEnableBluetooth:()-> Unit) {
+fun AppNavigation(viewModel:BackupRestoreViewModel,onEnableBluetooth:()-> Unit) {
     var title by remember{ mutableStateOf("Mobile Billing") }
     val navController = rememberNavController()
     val btViewModel = hiltViewModel<BluetoothViewModel>()
@@ -61,6 +75,20 @@ fun AppNavigation(onEnableBluetooth:()-> Unit) {
 
     val isBluetoothEnabled: Boolean = bluetoothAdapter?.isEnabled == true
 
+    var billitemsCol: List<BillItemCollection>? = null
+    viewModel.billitemsCol.observeForever {
+        billitemsCol = it
+    }
+    var billitems : List<BillItem> ? = null
+    viewModel.billitems.observeForever {
+        billitems = it
+    }
+    var customers : List<CustomerItem> ? = null
+    viewModel.customers.observeForever {
+        customers = it
+    }
+
+    var isRestoreConfirm by remember{ mutableStateOf(false) }
     Column {
             HeaderLayout(title, state, userViewModel, onStartScan = {
                 if (!isBluetoothEnabled) {
@@ -71,9 +99,22 @@ fun AppNavigation(onEnableBluetooth:()-> Unit) {
             }, onStopScan = btViewModel::stopScan,
                 {
                 navController.navigate(Screen.Customer.route)
-            }){
-                navController.navigate(Screen.BackupRestore.route)
+            },{
+                    viewModel.backupDatabase(billitemsCol!!,billitems!!,customers!!,context)
+
+                },{
+                    isRestoreConfirm = true
+
+                })
+        if(isRestoreConfirm){
+            RestoreConfirmationDialog(
+                onDismiss = {
+                    isRestoreConfirm = false
+                }) {
+                viewModel.restoreDatabase(context)
+                isRestoreConfirm = false
             }
+        }
 
         NavHost(
             navController = navController,
@@ -106,7 +147,8 @@ fun HeaderLayout(
     onStartScan: () -> Unit,
     onStopScan: () -> Unit,
     onCustomerClick:()->Unit,
-    onBRClick:()->Unit
+    onBackup:()->Unit,
+    onRestore:()->Unit
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
@@ -132,64 +174,106 @@ fun HeaderLayout(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
-                    Column(horizontalAlignment = Alignment.End) {
-                        Icon(
-                            Icons.Default.MoreVert,
-                            contentDescription = "Menu Icon",
-                            tint = Color.White,
-                            modifier = Modifier.clickable { isMenuExpanded = !isMenuExpanded }
-                        )
-                        DropdownMenu(
-                            expanded = isMenuExpanded,
-                            onDismissRequest = { isMenuExpanded = false },
+
+                }
+
+            },
+            actions = {
+//                      Icon(painterResource(R.drawable.ic_backup),"",
+//                          modifier = Modifier.clickable {
+//                              onBackup()
+//                          },
+//                          tint = Color.White)
+//                Spacer(modifier = Modifier.width(10.dp))
+//                Icon(painterResource(id = (R.drawable.ic_restore)), "",
+//                    modifier = Modifier.clickable {
+//                        onRestore()
+//                    },
+//                    tint = Color.White)
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(horizontalAlignment = Alignment.End) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = "Menu Icon",
+                        tint = Color.White,
+                        modifier = Modifier.clickable { isMenuExpanded = !isMenuExpanded }
+                    )
+                    DropdownMenu(
+                        expanded = isMenuExpanded,
+                        onDismissRequest = { isMenuExpanded = false },
+                    ) {
+                        DropdownMenuItem(
+                            onClick = {
+                                isMenuExpanded = false
+                                // Handle Settings menu item click
+                                isSettingsExpanded = true
+                            }
                         ) {
-                            DropdownMenuItem(
-                                onClick = {
-                                    isMenuExpanded = false
-                                    // Handle Settings menu item click
-                                    isSettingsExpanded = true
-                                }
-                            ) {
-                                Text("Settings")
+                            Icon(Icons.Default.Settings,"",tint = MainColor)
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("Settings")
+                        }
+                        DropdownMenuItem(
+                            onClick = {
+                                isMenuExpanded = false
+                                // Handle Printer Connection menu item click
+                                isPrinterExpanded = true
                             }
-                            DropdownMenuItem(
-                                onClick = {
-                                    isMenuExpanded = false
-                                    // Handle Printer Connection menu item click
-                                    isPrinterExpanded = true
-                                }
-                            ) {
-                                Text("Printer Connection")
+                        ) {
+                            Icon(painterResource(id = R.drawable.ic_printer),"",tint = MainColor)
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("Printer Connection")
+                        }
+                        DropdownMenuItem(
+                            onClick = {
+                                isMenuExpanded = false
+                                onCustomerClick()
+                                // Handle Others menu item click
                             }
-                            DropdownMenuItem(
-                                onClick = {
-                                    isMenuExpanded = false
-                                    // Handle Others menu item click
-                                }
-                            ) {
-                                Text("Others")
+                        ) {
+                            Image(painterResource(id = R.drawable.customer_service), contentDescription = "",
+                            colorFilter = ColorFilter.tint(MainColor),
+                                modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("Customers")
+                        }
+                        DropdownMenuItem(
+                            onClick = {
+                                isMenuExpanded = false
+                                onBackup()
+                                // Handle Others menu item click
                             }
-                            DropdownMenuItem(
-                                onClick = {
-                                    isMenuExpanded = false
-                                    onCustomerClick()
-                                    // Handle Others menu item click
-                                }
-                            ) {
-                                Text("Customers")
+                        ) {
+                            Image(painterResource(id = R.drawable.ic_backup), contentDescription = "",
+                            colorFilter = ColorFilter.tint(MainColor),
+                                modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("Backup")
+                        }
+                        DropdownMenuItem(
+                            onClick = {
+                                isMenuExpanded = false
+                                onRestore()
+                                // Handle Others menu item click
                             }
-                            DropdownMenuItem(
-                                onClick = {
-                                    isMenuExpanded = false
-                                    onBRClick()
-                                    // Handle Others menu item click
-                                }
-                            ) {
-                                Text("Backup & Restore")
+                        ) {
+                            Image(painterResource(id = R.drawable.ic_restore), contentDescription = "",
+                            colorFilter = ColorFilter.tint(MainColor),
+                                modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("Restore")
+                        }
+                        DropdownMenuItem(
+                            onClick = {
+                                isMenuExpanded = false
+                                // Handle Others menu item click
                             }
+                        ) {
+                            Icon(Icons.Default.ExitToApp,"",tint = MainColor)
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("Others")
                         }
                     }
-
                 }
 
             },

@@ -123,23 +123,6 @@ abstract class AppDatabase : RoomDatabase() {
             e.printStackTrace()
             Toast.makeText(context, e.localizedMessage, Toast.LENGTH_SHORT).show()
         }
-//
-//
-//
-//        val currentDBPath = context.getDatabasePath(DATABASE_NAME).absolutePath
-////        val backupDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-//        if (!backupDir.exists()) {
-//            backupDir.mkdirs()
-//        }
-//        val backupFile = File(backupDir, "$backupFileName.db")
-//
-//        val fileInputStream = FileInputStream(currentDBPath)
-//        val outputStream = FileOutputStream(backupFile)
-//
-//        fileInputStream.copyTo(outputStream)
-//
-//        fileInputStream.close()
-//        outputStream.close()
     }
     // Restore the database from a backup file
     suspend fun restoreDatabase(context: Context) {
