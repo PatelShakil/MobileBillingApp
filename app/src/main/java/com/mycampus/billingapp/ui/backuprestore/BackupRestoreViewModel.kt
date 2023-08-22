@@ -4,12 +4,15 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
+import com.mycampus.billingapp.common.Utils.Companion.generateExcelSheet
+import com.mycampus.billingapp.data.models.BillItemCollectionExcel
 import com.mycampus.billingapp.data.room.AppDatabase
 import com.mycampus.billingapp.data.room.RoomDao
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.CustomerItem
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -35,6 +38,15 @@ ViewModel(){
         }
     }
 
+    val downloadExcelResult = MutableStateFlow<Boolean>(false)
+
+    fun generateExcel(excelDataList: List<BillItemCollectionExcel>) = viewModelScope.launch{
+        downloadExcelResult.value = true
+        generateExcelSheet(excelDataList).apply {
+            downloadExcelResult.value = false
+
+        }
+    }
 
 
 }

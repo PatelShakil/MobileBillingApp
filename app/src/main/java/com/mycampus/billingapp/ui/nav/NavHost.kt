@@ -39,7 +39,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mycampus.billingapp.R
+import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
 import com.mycampus.billingapp.common.uicomponents.RestoreConfirmationDialog
+import com.mycampus.billingapp.data.models.BillItemCollectionExcel
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
@@ -57,8 +59,8 @@ import com.mycampus.billingapp.ui.home.bluetooth.BluetoothUiState
 import com.mycampus.billingapp.ui.home.bluetooth.BluetoothViewModel
 
 @Composable
-fun AppNavigation(viewModel:BackupRestoreViewModel,onEnableBluetooth:()-> Unit) {
-    var title by remember{ mutableStateOf("Mobile Billing") }
+fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Unit) {
+    var title by remember { mutableStateOf("Mobile Billing") }
     val navController = rememberNavController()
     val btViewModel = hiltViewModel<BluetoothViewModel>()
     val userViewModel = hiltViewModel<UserViewModel>()
@@ -79,34 +81,67 @@ fun AppNavigation(viewModel:BackupRestoreViewModel,onEnableBluetooth:()-> Unit) 
     viewModel.billitemsCol.observeForever {
         billitemsCol = it
     }
-    var billitems : List<BillItem> ? = null
+    var billitems: List<BillItem>? = null
     viewModel.billitems.observeForever {
         billitems = it
     }
-    var customers : List<CustomerItem> ? = null
+    var customers: List<CustomerItem>? = null
     viewModel.customers.observeForever {
         customers = it
     }
+    val collectionListExcel: MutableList<BillItemCollectionExcel> = emptyList<BillItemCollectionExcel>().toMutableList()
 
-    var isRestoreConfirm by remember{ mutableStateOf(false) }
+
+    var isRestoreConfirm by remember { mutableStateOf(false) }
     Column {
-            HeaderLayout(title, state, userViewModel, onStartScan = {
-                if (!isBluetoothEnabled) {
-                    onEnableBluetooth()
-                    btViewModel.startScan()
-                }
+        HeaderLayout(title, state, userViewModel, onStartScan = {
+            if (!isBluetoothEnabled) {
+                onEnableBluetooth()
                 btViewModel.startScan()
-            }, onStopScan = btViewModel::stopScan,
-                {
+            }
+            btViewModel.startScan()
+        }, onStopScan = btViewModel::stopScan,
+            {
                 navController.navigate(Screen.Customer.route)
-            },{
-                    viewModel.backupDatabase(billitemsCol!!,billitems!!,customers!!,context)
+            }, {
+                viewModel.backupDatabase(billitemsCol!!, billitems!!, customers!!, context)
 
-                },{
-                    isRestoreConfirm = true
+            }, {
+                isRestoreConfirm = true
 
-                })
-        if(isRestoreConfirm){
+            }, {
+                billitemsCol!!.forEach { bill ->
+                val customer = customers!!.filter { it.id == bill.customerid }[0]
+                val billitemList = billitems!!.filter { it.bill_info_id == bill.id }
+                collectionListExcel!!.add(
+                    BillItemCollectionExcel(
+                        bill.id,
+                        customer,
+                        bill.bill_no,
+                        bill.bill_pay_mode,
+                        bill.tax,
+                        bill.total_amount,
+                        bill.paid_amount,
+                        bill.balance_amount,
+                        bill.discount,
+                        bill.remarks,
+                        bill.creation_date,
+                        bill.created_by,
+                        billitemList,
+                        bill.is_sync
+                    )
+                )
+            }
+                viewModel.generateExcel(collectionListExcel)
+            })
+        viewModel.downloadExcelResult.collectAsState().let {
+            if(it.value){
+                ProgressBarCus {
+
+                }
+            }
+        }
+        if (isRestoreConfirm) {
             RestoreConfirmationDialog(
                 onDismiss = {
                     isRestoreConfirm = false
@@ -128,27 +163,29 @@ fun AppNavigation(viewModel:BackupRestoreViewModel,onEnableBluetooth:()-> Unit) 
                 BillDetailScreen(hiltViewModel(), hiltViewModel(), navController)
                 title = "Billing Details"
             }
-            composable(Screen.Customer.route){
+            composable(Screen.Customer.route) {
                 CustomerScreen(viewModel = hiltViewModel(), navController = navController)
                 title = "Customers"
             }
-            composable(Screen.BackupRestore.route){
+            composable(Screen.BackupRestore.route) {
                 BackupRestoreScreen(viewModel = hiltViewModel())
                 title = "Backup & Restore"
             }
         }
     }
 }
+
 @Composable
 fun HeaderLayout(
-    title:String,
+    title: String,
     state: BluetoothUiState,
     viewModel: UserViewModel,
     onStartScan: () -> Unit,
     onStopScan: () -> Unit,
-    onCustomerClick:()->Unit,
-    onBackup:()->Unit,
-    onRestore:()->Unit
+    onCustomerClick: () -> Unit,
+    onBackup: () -> Unit,
+    onRestore: () -> Unit,
+    onDownloadExcel: () -> Unit
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
@@ -209,7 +246,7 @@ fun HeaderLayout(
                                 isSettingsExpanded = true
                             }
                         ) {
-                            Icon(Icons.Default.Settings,"",tint = MainColor)
+                            Icon(Icons.Default.Settings, "", tint = MainColor)
                             Spacer(modifier = Modifier.width(5.dp))
                             Text("Settings")
                         }
@@ -220,7 +257,7 @@ fun HeaderLayout(
                                 isPrinterExpanded = true
                             }
                         ) {
-                            Icon(painterResource(id = R.drawable.ic_printer),"",tint = MainColor)
+                            Icon(painterResource(id = R.drawable.ic_printer), "", tint = MainColor)
                             Spacer(modifier = Modifier.width(5.dp))
                             Text("Printer Connection")
                         }
@@ -231,9 +268,12 @@ fun HeaderLayout(
                                 // Handle Others menu item click
                             }
                         ) {
-                            Image(painterResource(id = R.drawable.customer_service), contentDescription = "",
-                            colorFilter = ColorFilter.tint(MainColor),
-                                modifier = Modifier.size(24.dp))
+                            Image(
+                                painterResource(id = R.drawable.customer_service),
+                                contentDescription = "",
+                                colorFilter = ColorFilter.tint(MainColor),
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(modifier = Modifier.width(5.dp))
                             Text("Customers")
                         }
@@ -244,9 +284,11 @@ fun HeaderLayout(
                                 // Handle Others menu item click
                             }
                         ) {
-                            Image(painterResource(id = R.drawable.ic_backup), contentDescription = "",
-                            colorFilter = ColorFilter.tint(MainColor),
-                                modifier = Modifier.size(24.dp))
+                            Image(
+                                painterResource(id = R.drawable.ic_backup), contentDescription = "",
+                                colorFilter = ColorFilter.tint(MainColor),
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(modifier = Modifier.width(5.dp))
                             Text("Backup")
                         }
@@ -257,11 +299,30 @@ fun HeaderLayout(
                                 // Handle Others menu item click
                             }
                         ) {
-                            Image(painterResource(id = R.drawable.ic_restore), contentDescription = "",
-                            colorFilter = ColorFilter.tint(MainColor),
-                                modifier = Modifier.size(24.dp))
+                            Image(
+                                painterResource(id = R.drawable.ic_restore),
+                                contentDescription = "",
+                                colorFilter = ColorFilter.tint(MainColor),
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(modifier = Modifier.width(5.dp))
                             Text("Restore")
+                        }
+                        DropdownMenuItem(
+                            onClick = {
+                                isMenuExpanded = false
+                                onDownloadExcel()
+                                // Handle Others menu item click
+                            }
+                        ) {
+                            Image(
+                                painterResource(id = R.drawable.ic_restore),
+                                contentDescription = "",
+                                colorFilter = ColorFilter.tint(MainColor),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("Download Excel Sheet")
                         }
                         DropdownMenuItem(
                             onClick = {
@@ -269,7 +330,7 @@ fun HeaderLayout(
                                 // Handle Others menu item click
                             }
                         ) {
-                            Icon(Icons.Default.ExitToApp,"",tint = MainColor)
+                            Icon(Icons.Default.ExitToApp, "", tint = MainColor)
                             Spacer(modifier = Modifier.width(5.dp))
                             Text("Others")
                         }
