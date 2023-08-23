@@ -26,6 +26,7 @@ ViewModel(){
     val billitemsCol = dao.getAllBillItemsCol().asLiveData()
     val billitems = dao.getAllBillItems().asLiveData()
     val customers = dao.getAllCustomers().asLiveData()
+    val billitemcollection = dao.getAllItemCollectionsWithBillItems().asLiveData()
     fun backupDatabase(billitemCols : List<BillItemCollection>, billitems:List<BillItem>, customers : List<CustomerItem>, context : Context) {
         viewModelScope.launch {
             appDatabase.backupDatabase(billitemCols,billitems,customers,context)

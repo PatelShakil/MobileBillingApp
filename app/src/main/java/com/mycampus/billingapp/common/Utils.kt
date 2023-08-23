@@ -11,6 +11,9 @@ import android.os.Build
 import android.view.View
 import androidx.core.content.FileProvider
 import com.mycampus.billingapp.data.models.BillItemCollectionExcel
+import org.apache.poi.ss.usermodel.CellStyle
+import org.apache.poi.ss.usermodel.Font
+import org.apache.poi.xssf.usermodel.XSSFCellStyle
 import org.apache.poi.xssf.usermodel.XSSFSheet
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
@@ -126,31 +129,46 @@ class Utils {
             val workbook = XSSFWorkbook()
             val sheet = workbook.createSheet("Bill Data")
 
-            val mainHeaderRow = sheet.createRow(0)
-            mainHeaderRow.createCell(0).setCellValue("ID")
-            mainHeaderRow.createCell(1).setCellValue("Customer Name")
-            mainHeaderRow.createCell(2).setCellValue("Customer Mobile")
-            mainHeaderRow.createCell(3).setCellValue("Customer Email")
-            mainHeaderRow.createCell(4).setCellValue("Customer Address")
-            mainHeaderRow.createCell(5).setCellValue("Bill Number")
-            mainHeaderRow.createCell(6).setCellValue("Payment Mode")
-            mainHeaderRow.createCell(7).setCellValue("Tax(%)")
-            mainHeaderRow.createCell(8).setCellValue("Total Amount(Rs.)")
-            mainHeaderRow.createCell(9).setCellValue("Paid Amount(Rs.)")
-            mainHeaderRow.createCell(10).setCellValue("Balance Amount(Rs.)")
-            mainHeaderRow.createCell(11).setCellValue("Discount(Rs.)")
-            mainHeaderRow.createCell(12).setCellValue("Remarks")
-            mainHeaderRow.createCell(13).setCellValue("Creation Date")
-            mainHeaderRow.createCell(14).setCellValue("Created By")
-            mainHeaderRow.createCell(15).setCellValue("Sync")
-//            mainHeaderRow.createCell(16).setCellValue("Item Name")
-//            mainHeaderRow.createCell(17).setCellValue("Item Amount")
-//            mainHeaderRow.createCell(18).setCellValue("Item Creation Date")
-//            mainHeaderRow.createCell(19).setCellValue("Item Created By")
+            val headerCellTexts = listOf(
+                "ID",
+                "Customer Name",
+                "Customer Mobile",
+                "Customer Email",
+                "Customer Address",
+                "Bill Number",
+                "Payment Mode",
+                "Tax(%)",
+                "Total Amount(Rs.)",
+                "Paid Amount(Rs.)",
+                "Balance Amount(Rs.)",
+                "Discount(Rs.)",
+                "Remarks",
+                "Creation Date",
+                "Created By",
+                "Sync",
+                "Item Name",
+                "Item Amount(Rs.)",
+                "Item Creation Date",
+                "Item Created By"
+            )
+
+            val boldHeaderRow = sheet.createRow(0)
+            for ((index, headerText) in headerCellTexts.withIndex()) {
+                val cell = boldHeaderRow.createCell(index)
+                cell.setCellValue(headerText)
+                // Set any other cell styling you need here
+                val boldFont: Font = workbook.createFont()
+                boldFont.bold = true
+
+                val boldCellStyle: CellStyle = workbook.createCellStyle()
+                boldCellStyle.setFont(boldFont)
+                cell.cellStyle = boldCellStyle as XSSFCellStyle?
+            }
+
 
             var rowNum = 1
             for (data in dataList) {
-                val mainDataRow = sheet.createRow(rowNum)
+                var mainDataRow = sheet.createRow(rowNum)
                 mainDataRow.createCell(0).setCellValue(data.id.toDouble())
                 mainDataRow.createCell(1).setCellValue(data.customer.name)
                 mainDataRow.createCell(2).setCellValue(data.customer.mobile)
@@ -164,23 +182,25 @@ class Utils {
                 mainDataRow.createCell(10).setCellValue(data.balance_amount)
                 mainDataRow.createCell(11).setCellValue(data.discount)
                 mainDataRow.createCell(12).setCellValue(data.remarks)
-                mainDataRow.createCell(13).setCellValue(convertLongToDate(data.creation_date,"dd-MM-yyyy"))
+                mainDataRow.createCell(13).setCellValue((convertLongToDate(data.creation_date,"dd-MM-yyyy")))
                 mainDataRow.createCell(14).setCellValue(data.created_by)
                 mainDataRow.createCell(15).setCellValue(if(data.is_sync) "Yes" else "No")
 
-//                for (item in data.itemList) {
-//                    val itemDataRow = sheet.createRow(rowNum)
-//                    itemDataRow.createCell(16).setCellValue(item.item_name)
-//                    itemDataRow.createCell(17).setCellValue(item.item_amount)
-//                    itemDataRow.createCell(18).setCellValue(item.creation_date.toDouble())
-//                    itemDataRow.createCell(19).setCellValue(item.created_by)
-//                    rowNum++
-//                }
-
-                rowNum++
+                var isNewRow = false
+                for (item in data.itemList) {
+                    if(isNewRow) {
+                        mainDataRow = sheet.createRow(rowNum)
+                    }
+                    mainDataRow.createCell(16).setCellValue(item.item_name)
+                    mainDataRow.createCell(17).setCellValue(item.item_amount)
+                    mainDataRow.createCell(18).setCellValue(convertLongToDate(data.creation_date,"dd-MM-yyyy"))
+                    mainDataRow.createCell(19).setCellValue(item.created_by)
+                    rowNum++
+                    isNewRow = true
+                }
             }
 
-                setAutoSizeColumns(sheet,16)
+                setAutoSizeColumns(sheet,20)
             val filePath = File("$EXCEL_DIR/billcollection.xlsx")
             if (!File(EXCEL_DIR).exists())
                 File(EXCEL_DIR).mkdirs()
@@ -201,6 +221,6 @@ class Utils {
                 sheet.setColumnWidth(colIndex, columnWidth)
             }
         }
-
     }
 }
+

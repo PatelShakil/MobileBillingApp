@@ -1,6 +1,7 @@
 package com.mycampus.billingapp.ui.nav
 
 import android.bluetooth.BluetoothManager
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +46,7 @@ import com.mycampus.billingapp.data.models.BillItemCollectionExcel
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
+import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.data.room.entities.CustomerItem
 import com.mycampus.billingapp.ui.backuprestore.BackupRestoreScreen
 import com.mycampus.billingapp.ui.backuprestore.BackupRestoreViewModel
@@ -85,6 +87,10 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
     viewModel.billitems.observeForever {
         billitems = it
     }
+    var billitemcollection:List<BillItemCollectionWithBillItems> ? = null
+    viewModel.billitemcollection.observeForever {
+        billitemcollection = it
+    }
     var customers: List<CustomerItem>? = null
     viewModel.customers.observeForever {
         customers = it
@@ -112,7 +118,7 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
             }, {
                 billitemsCol!!.forEach { bill ->
                 val customer = customers!!.filter { it.id == bill.customerid }[0]
-                val billitemList = billitems!!.filter { it.bill_info_id == bill.id }
+                val billitemList = billitemcollection!!.filter { it.itemCollection.bill_no == bill.bill_no }[0].itemList
                 collectionListExcel!!.add(
                     BillItemCollectionExcel(
                         bill.id,
@@ -132,6 +138,7 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
                     )
                 )
             }
+                Log.d("Collection",collectionListExcel.toString())
                 viewModel.generateExcel(collectionListExcel)
             })
         viewModel.downloadExcelResult.collectAsState().let {
@@ -316,7 +323,7 @@ fun HeaderLayout(
                             }
                         ) {
                             Image(
-                                painterResource(id = R.drawable.ic_restore),
+                                painterResource(id = R.drawable.ic_excel),
                                 contentDescription = "",
                                 colorFilter = ColorFilter.tint(MainColor),
                                 modifier = Modifier.size(24.dp)
