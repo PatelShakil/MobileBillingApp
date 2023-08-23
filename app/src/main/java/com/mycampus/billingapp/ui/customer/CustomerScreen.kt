@@ -1,6 +1,7 @@
 package com.mycampus.billingapp.ui.customer
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -58,24 +60,27 @@ import com.mycampus.billingapp.ui.home.LightMainColor
 import com.mycampus.billingapp.ui.home.MainColor
 
 @Composable
-fun CustomerScreen(viewModel : CustomerViewModel,navController: NavController) {
-    var isAddCustomer by remember{ mutableStateOf(false) }
-    var customerCol by remember{ mutableStateOf(listOf<CustomerItem>()) }
-    var customerColOg by remember{ mutableStateOf(listOf<CustomerItem>()) }
+fun CustomerScreen(viewModel: CustomerViewModel, navController: NavController) {
+    var isAddCustomer by remember { mutableStateOf(false) }
+    var customerCol by remember { mutableStateOf(listOf<CustomerItem>()) }
+    var customerColOg by remember { mutableStateOf(listOf<CustomerItem>()) }
     viewModel.allCustomers.observeForever {
         customerColOg = it
         customerCol = customerColOg
     }
     Box(modifier = Modifier.fillMaxSize()) {
 
-        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            SearchBar(onTextChanged = {value ->
-                customerCol = if(value.isNotEmpty())
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            SearchBar(onTextChanged = { value ->
+                customerCol = if (value.isNotEmpty())
                     customerColOg.filter { it.name.lowercase().contains(value.lowercase()) }
                 else
                     customerColOg
             })
-            if(customerCol.isNotEmpty()) {
+            if (customerCol.isNotEmpty()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -88,8 +93,8 @@ fun CustomerScreen(viewModel : CustomerViewModel,navController: NavController) {
                         Spacer(modifier = Modifier.height(5.dp))
                     }
                 }
-            }else{
-                if(customerColOg.isNotEmpty())
+            } else {
+                if (customerColOg.isNotEmpty())
                     ErrorMessage(msg = "No Corresponding record found...")
                 else
                     ErrorMessage(msg = "No Data found...")
@@ -109,9 +114,9 @@ fun CustomerScreen(viewModel : CustomerViewModel,navController: NavController) {
             )
         }
     }
-    if(isAddCustomer){
-        AddCustomerPopupScreen(customer = CustomerItem(0,"","","",""), onDismiss = {
-                                                                                   isAddCustomer = !isAddCustomer
+    if (isAddCustomer) {
+        AddCustomerPopupScreen(customer = CustomerItem(0, "", "", "", ""), onDismiss = {
+            isAddCustomer = !isAddCustomer
         }, onConfirm = {
             viewModel.addCustomer(it)
         })
@@ -120,11 +125,17 @@ fun CustomerScreen(viewModel : CustomerViewModel,navController: NavController) {
 
 @Composable
 fun SearchBar(onTextChanged: (String) -> Unit) {
-    var value by remember{ mutableStateOf("") }
-    Column(modifier = Modifier.fillMaxWidth().background(LightMainColor),
-    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    var value by remember { mutableStateOf("") }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(LightMainColor),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center
+    ) {
         Card(
-            modifier = Modifier.fillMaxWidth(.9f).padding(vertical = 15.dp),
+            modifier = Modifier
+                .fillMaxWidth(.95f)
+                .padding(vertical = 15.dp),
             border = BorderStroke(.5.dp, Color.Gray),
             elevation = CardDefaults.cardElevation(
                 18.dp
@@ -142,7 +153,7 @@ fun SearchBar(onTextChanged: (String) -> Unit) {
                     )
                 },
                 trailingIcon = {
-                    if(value.isNotEmpty()) {
+                    if (value.isNotEmpty()) {
                         Icon(
                             Icons.Default.Clear, "",
                             tint = MainColor,
@@ -153,10 +164,14 @@ fun SearchBar(onTextChanged: (String) -> Unit) {
                     }
                 },
                 label = {
-                              Text("Search Customer",
-                              style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "Search Customer",
+                        style = MaterialTheme.typography.titleSmall
+                    )
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
                 colors = TextFieldDefaults.textFieldColors(
                     focusedIndicatorColor = Color.Transparent,
                     backgroundColor = Color.White,
@@ -167,55 +182,61 @@ fun SearchBar(onTextChanged: (String) -> Unit) {
     }
 
 }
+
 @Composable
 fun CustomerItemSample(customer: CustomerItem) {
-    Card(modifier = Modifier.fillMaxWidth(.95f),
-    border = BorderStroke(.5.dp, Color.Gray),
-        elevation = CardDefaults.cardElevation(18.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(.95f),
+        border = BorderStroke(.5.dp, Color.Gray),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(vertical = 5.dp)
-            .padding(start = 5.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(painterResource(id = R.drawable.customer_service), contentDescription = "",
-            modifier = Modifier.size(40.dp))
-            Column() {
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(vertical = 5.dp)
+                .padding(start = 5.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
 
-                Text(
-                    text = customer.name,
-                    modifier = Modifier.padding(start = 5.dp),
-                    fontSize = 16.sp,
-                    style = MaterialTheme.typography.titleSmall
-                )
-                Text(
-                    text = "Phone No. : " + customer.mobile,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(start = 5.dp)
-                )
-                Text(
-                    text = "Email : " + customer.email,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(start = 5.dp)
-                )
-                Text(
-                    text = buildAnnotatedString {
-                        append("Address: " + customer.address)
-                    },
-                    style = TextStyle(
+                Column(modifier = Modifier.weight(.7f)) {
+
+                    Text(
+                        text = customer.name,
+                        modifier = Modifier.padding(start = 5.dp),
+                        fontSize = 16.sp,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        text = "Phone No. : " + customer.mobile,
                         fontSize = 13.sp,
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 5.dp, end = 5.dp)
-                        .background(Color.White), // Just for visualization, to see the boundaries of the Text composable
-                    softWrap = true,
-                    maxLines = Int.MAX_VALUE // Allow unlimited lines
-                )            }
-
+                        modifier = Modifier.padding(start = 5.dp)
+                    )
+                    Text(
+                        text = "Email : " + customer.email,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(start = 5.dp)
+                    )
+                    Text(
+                        text = buildAnnotatedString {
+                            append("Address: " + customer.address)
+                        },
+                        style = TextStyle(
+                            fontSize = 13.sp,
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 5.dp, end = 5.dp)
+                            .background(Color.White), // Just for visualization, to see the boundaries of the Text composable
+                        softWrap = true,
+                        maxLines = Int.MAX_VALUE // Allow unlimited lines
+                    )
+                }
+                Image(
+                    painterResource(id = R.drawable.customer_service), contentDescription = "",
+                    modifier = Modifier.size(70.dp).padding(10.dp),
+                    colorFilter = ColorFilter.tint(MainColor)
+                )
             }
         }
     }
@@ -223,11 +244,9 @@ fun CustomerItemSample(customer: CustomerItem) {
 }
 
 
-
-
 @Composable
 fun AddCustomerPopupScreen(
-    isEdit : Boolean = false,
+    isEdit: Boolean = false,
     customer: CustomerItem,
     onDismiss: () -> Unit,
     onConfirm: (CustomerItem) -> Unit
@@ -240,10 +259,10 @@ fun AddCustomerPopupScreen(
             usePlatformDefaultWidth = false
         )
     ) {
-        var name by remember{ mutableStateOf("") }
-        var mobile by remember{ mutableStateOf("") }
-        var email by remember{ mutableStateOf("") }
-        var address by remember{ mutableStateOf("") }
+        var name by remember { mutableStateOf("") }
+        var mobile by remember { mutableStateOf("") }
+        var email by remember { mutableStateOf("") }
+        var address by remember { mutableStateOf("") }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -282,7 +301,7 @@ fun AddCustomerPopupScreen(
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        "${if(isEdit) "Update" else "Add"} Customer",
+                        "${if (isEdit) "Update" else "Add"} Customer",
                         style = MaterialTheme.typography.titleSmall,
                         color = MainColor,
                         fontWeight = FontWeight.Bold,
@@ -300,15 +319,19 @@ fun AddCustomerPopupScreen(
                             name = it
                         })
                         Spacer(modifier = Modifier.height(5.dp))
-                        AddCustomerTextField(label = "Mobile", onTextChanged = {
-                            mobile = it
-                        },
-                        KeyboardType.Phone)
+                        AddCustomerTextField(
+                            label = "Mobile", onTextChanged = {
+                                mobile = it
+                            },
+                            KeyboardType.Phone
+                        )
                         Spacer(modifier = Modifier.height(5.dp))
-                        AddCustomerTextField(label = "Email", onTextChanged = {
-                            email = it
-                        },
-                        KeyboardType.Email)
+                        AddCustomerTextField(
+                            label = "Email", onTextChanged = {
+                                email = it
+                            },
+                            KeyboardType.Email
+                        )
                         Spacer(modifier = Modifier.height(5.dp))
                         AddCustomerTextField(label = "Address", onTextChanged = {
                             address = it
@@ -319,11 +342,11 @@ fun AddCustomerPopupScreen(
                             .fillMaxWidth(.9f),
                             enabled = name.isNotEmpty() && mobile.isNotEmpty() && email.isNotEmpty() && address.isNotEmpty(),
                             onClick = {
-                                val cus = CustomerItem(0,name,mobile,email,address)
+                                val cus = CustomerItem(0, name, mobile, email, address)
                                 onConfirm(cus)
                                 onDismiss()
                             }) {
-                            Text(if(isEdit) "Update" else "Add")
+                            Text(if (isEdit) "Update" else "Add")
                         }
                     }
                     Spacer(modifier = Modifier.height(10.dp))
@@ -332,12 +355,20 @@ fun AddCustomerPopupScreen(
         }
     }
 }
+
 @Composable
-fun AddCustomerTextField(label : String,onTextChanged:(String)->Unit,keyboardType : KeyboardType = KeyboardType.Text) {
-    var tv by remember{ mutableStateOf("") }
-    androidx.compose.material.OutlinedTextField(value = tv, onValueChange = {tv = it
-        onTextChanged(it)},
-        label = {androidx.compose.material.Text(label,color = MainColor)},
+fun AddCustomerTextField(
+    label: String,
+    onTextChanged: (String) -> Unit,
+    keyboardType: KeyboardType = KeyboardType.Text
+) {
+    var tv by remember { mutableStateOf("") }
+    androidx.compose.material.OutlinedTextField(
+        value = tv, onValueChange = {
+            tv = it
+            onTextChanged(it)
+        },
+        label = { androidx.compose.material.Text(label, color = MainColor) },
         modifier = Modifier.fillMaxWidth(),
         colors = TextFieldDefaults.outlinedTextFieldColors(
             focusedBorderColor = MainColor
