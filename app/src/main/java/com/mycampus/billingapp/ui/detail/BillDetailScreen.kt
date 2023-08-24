@@ -83,9 +83,7 @@ import com.mycampus.billingapp.ui.home.UserViewModel
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.io.File
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -111,7 +109,7 @@ fun BillDetailScreen(
         itemColOg = it
         itemCol = itemColOg.filter {
             Utils.convertLongToDate(
-                it.itemCollection.creation_date,
+                it.itemCollection.bill_date,
                 "dd-MM-yyyy"
             ) == selectedDate
         }
@@ -196,7 +194,7 @@ fun BillDetailScreen(
                 if (isOnline) {
                     itemCol = itemColOg.filter {
                         Utils.convertLongToDate(
-                            it.itemCollection.creation_date,
+                            it.itemCollection.bill_date,
                             "dd-MM-yyyy"
                         ) == selectedDate &&
                                 it.itemCollection.bill_pay_mode != "Paid by Cash"
@@ -205,7 +203,7 @@ fun BillDetailScreen(
                 if (isCash) {
                     itemCol = itemColOg.filter {
                         Utils.convertLongToDate(
-                            it.itemCollection.creation_date,
+                            it.itemCollection.bill_date,
                             "dd-MM-yyyy"
                         ) == selectedDate &&
                                 it.itemCollection.bill_pay_mode == "Paid by Cash"
@@ -214,7 +212,7 @@ fun BillDetailScreen(
                 if (!isCash && !isOnline || (isCash && isOnline)) {
                     itemCol = itemColOg.filter {
                         Utils.convertLongToDate(
-                            it.itemCollection.creation_date,
+                            it.itemCollection.bill_date,
                             "dd-MM-yyyy"
                         ) == selectedDate
                     }
@@ -281,7 +279,7 @@ fun BillDetailScreen(
                             delay(2000)
                             val bitmap = briView.drawToBitmap(Bitmap.Config.ARGB_8888)
                             val filename = billItems.itemCollection.bill_no + convertLongToDate(
-                                billItems.itemCollection.creation_date,
+                                billItems.itemCollection.bill_date,
                                 "_dd_MM_yyyy"
                             )
                             saveFile(filename, bitmap)
@@ -474,29 +472,6 @@ fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> 
     }
 }
 
-fun getFileAttributes(filePath: String) {
-    val file = File(filePath)
-
-    if (file.exists()) {
-        val absolutePath = file.absolutePath
-        val fileName = file.name
-        val isDirectory = file.isDirectory
-        val fileSize = file.length()
-        val lastModifiedTimestamp = file.lastModified()
-        val sdf = SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault())
-        val creationDate = sdf.format(Date(lastModifiedTimestamp))
-        val lastModifiedDate = sdf.format(Date(lastModifiedTimestamp))
-
-        println("File Path: $absolutePath")
-        println("File Name: $fileName")
-        println("Is Directory: $isDirectory")
-        println("File Size: $fileSize bytes")
-        println("Creation Date: $creationDate")
-        println("Last Modified Date: $lastModifiedDate")
-    } else {
-        println("File not found.")
-    }
-}
 
 @Composable
 fun BillReceiptItem(
@@ -581,7 +556,7 @@ fun BillReceiptItem(
             ) {
                 Text(
                     "Bill at : " + Utils.convertLongToDate(
-                        bill.itemCollection.creation_date,
+                        bill.itemCollection.bill_date,
                         "dd-MMMM-yyyy hh:mma"
                     ),
                     fontSize = 12.sp,
@@ -821,7 +796,7 @@ fun BillReceiptItemReceipt(
                     ) {
                         Text(
                             "Bill at : " + Utils.convertLongToDate(
-                                bill.itemCollection.creation_date,
+                                bill.itemCollection.bill_date,
                                 "dd-MMMM-yyyy hh:mma"
                             ),
                             fontSize = 12.sp,

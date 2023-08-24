@@ -15,6 +15,7 @@ data class BillItemCollectionExcel(
     var discount: Double,
     var remarks: String,
     var creation_date: Long,
+    var bill_date : Long,
     var created_by: String,
     var itemList: List<BillItem>,
     var is_sync: Boolean

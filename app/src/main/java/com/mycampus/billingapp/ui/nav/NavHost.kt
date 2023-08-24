@@ -132,6 +132,7 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
                         bill.discount,
                         bill.remarks,
                         bill.creation_date,
+                        bill.bill_date,
                         bill.created_by,
                         billitemList,
                         bill.is_sync

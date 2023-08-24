@@ -144,6 +144,7 @@ class Utils {
                 "Discount(Rs.)",
                 "Remarks",
                 "Creation Date",
+                "Transaction Date",
                 "Created By",
                 "Sync",
                 "Item Name",
@@ -183,24 +184,25 @@ class Utils {
                 mainDataRow.createCell(11).setCellValue(data.discount)
                 mainDataRow.createCell(12).setCellValue(data.remarks)
                 mainDataRow.createCell(13).setCellValue((convertLongToDate(data.creation_date,"dd-MM-yyyy")))
-                mainDataRow.createCell(14).setCellValue(data.created_by)
-                mainDataRow.createCell(15).setCellValue(if(data.is_sync) "Yes" else "No")
+                mainDataRow.createCell(14).setCellValue((convertLongToDate(data.bill_date,"dd-MM-yyyy")))
+                mainDataRow.createCell(15).setCellValue(data.created_by)
+                mainDataRow.createCell(16).setCellValue(if(data.is_sync) "Yes" else "No")
 
                 var isNewRow = false
                 for (item in data.itemList) {
                     if(isNewRow) {
                         mainDataRow = sheet.createRow(rowNum)
                     }
-                    mainDataRow.createCell(16).setCellValue(item.item_name)
-                    mainDataRow.createCell(17).setCellValue(item.item_amount)
-                    mainDataRow.createCell(18).setCellValue(convertLongToDate(data.creation_date,"dd-MM-yyyy"))
-                    mainDataRow.createCell(19).setCellValue(item.created_by)
+                    mainDataRow.createCell(17).setCellValue(item.item_name)
+                    mainDataRow.createCell(18).setCellValue(item.item_amount)
+                    mainDataRow.createCell(19).setCellValue(convertLongToDate(data.creation_date,"dd-MM-yyyy"))
+                    mainDataRow.createCell(20).setCellValue(item.created_by)
                     rowNum++
                     isNewRow = true
                 }
             }
 
-                setAutoSizeColumns(sheet,20)
+                setAutoSizeColumns(sheet,21)
             val filePath = File("$EXCEL_DIR/billcollection.xlsx")
             if (!File(EXCEL_DIR).exists())
                 File(EXCEL_DIR).mkdirs()
