@@ -4,11 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.net.Uri
 import android.util.Log
-import android.widget.ScrollView
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -38,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,13 +59,16 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.view.drawToBitmap
+import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import com.mycampus.billingapp.R
+import com.mycampus.billingapp.common.ScrollableCapturable
 import com.mycampus.billingapp.common.Utils
+import com.mycampus.billingapp.common.Utils.Companion.STORAGE_DIR
 import com.mycampus.billingapp.common.Utils.Companion.convertLongToDate
 import com.mycampus.billingapp.common.Utils.Companion.saveFile
 import com.mycampus.billingapp.common.Utils.Companion.viewPdf
+import com.mycampus.billingapp.common.rememberCaptureController
 import com.mycampus.billingapp.common.uicomponents.DatePickerDialogCustom
 import com.mycampus.billingapp.common.uicomponents.DottedDivider
 import com.mycampus.billingapp.common.uicomponents.ErrorMessage
@@ -81,8 +82,8 @@ import com.mycampus.billingapp.ui.customer.CustomerViewModel
 import com.mycampus.billingapp.ui.home.MainColor
 import com.mycampus.billingapp.ui.home.UserViewModel
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -247,142 +248,35 @@ fun BillDetailScreen(
                 }
 
                 var isViewLaidOut by remember { mutableStateOf(false) }
-//                ScrollableCapturable(controller = rememberCaptureController(), onCaptured ={bitmap , e ->
-//                    if(e == null) {
-//                        GlobalScope.launch {
-//                            delay(2000)
-//                            val filename = billItems.itemCollection.bill_no + convertLongToDate(
-//                                billItems.itemCollection.creation_date,
-//                                "_dd_MM_yyyy"
-//                            )
-//                            if (bitmap != null) {
-//                                saveFile(filename, bitmap)
-//                                viewPdf(context as Activity, filename)
-//                                isPdfClick = !isPdfClick
-//                            }else{
-//                                isPdfClick = !isPdfClick
-//                            }
-//                        }
-//                    }else{
-//                        Log.d("ERROR",e.toString())
-//                    }
-//
-//                } ) {
-//                    AndroidView(factory = { briView })
-//                }
-                AndroidView(factory = {briView})
-                briView.viewTreeObserver.addOnGlobalLayoutListener {
-                    if (!isViewLaidOut) {
-                        isViewLaidOut = true
-                        // Capture the bitmap here
+                val captureController = rememberCaptureController()
+                ScrollableCapturable(controller = captureController, onCaptured ={bitmap , e ->
+                    if(bitmap != null) {
                         GlobalScope.launch {
-                            delay(2000)
-                            val bitmap = briView.drawToBitmap(Bitmap.Config.ARGB_8888)
                             val filename = billItems.itemCollection.bill_no + convertLongToDate(
-                                billItems.itemCollection.bill_date,
+                                billItems.itemCollection.creation_date,
                                 "_dd_MM_yyyy"
                             )
                             saveFile(filename, bitmap)
                             viewPdf(context as Activity, filename)
                             isPdfClick = !isPdfClick
                         }
+                    }else{
+                        Log.d("ERROR",e.toString())
                     }
+
+                } ) {
+                    AndroidView(factory = { briView })
+                }
+                LaunchedEffect(true) {
+                    captureController.capture()
                 }
                 Spacer(modifier = Modifier.height(50.dp))
-
-                /*if(isBtnClick){
-                    briView.viewTreeObserver.addOnGlobalLayoutListener {
-                        if (!isViewLaidOut) {
-                            isViewLaidOut = true
-                            // Capture the bitmap here
-                            val bitmap = briView.drawToBitmap(Bitmap.Config.ARGB_8888)
-                            saveFile(billItems.itemCollection.bill_no, bitmap)
-                            viewPdf(context as Activity, billItems.itemCollection.bill_no)
-                            isPdfClick = !isPdfClick
-                        }
-                    }
-                }*/
                 ProgressBarCus {
 
                 }
             }
         }
     }
-}
-
-//        implementation "dev.shreyaspatil:capturable:1.0.3"
-
-
-
-@Composable
-fun ScrollableCapturable(
-    modifier: Modifier = Modifier,
-    controller: CaptureController,
-    onCaptured: (Bitmap?, Throwable?) -> Unit,
-    content: @Composable () -> Unit
-) {
-    AndroidView(
-        factory = { context ->
-            val scrollView = ScrollView(context)
-            val composeView = ComposeView(context).apply {
-                setContent {
-                    content()
-                }
-            }
-            scrollView.addView(composeView)
-            scrollView
-        },
-        update = { scrollView ->
-            if (controller.readyForCapture) {
-                // Hide scrollbars for capture
-                scrollView.isVerticalScrollBarEnabled = false
-                scrollView.isHorizontalScrollBarEnabled = false
-                try {
-                    val bitmap = loadBitmapFromScrollView(scrollView)
-                    onCaptured(bitmap, null)
-                } catch (throwable: Throwable) {
-                    onCaptured(null, throwable)
-                }
-                scrollView.isVerticalScrollBarEnabled = true
-                scrollView.isHorizontalScrollBarEnabled = true
-                controller.captured()
-            }
-        },
-        modifier = modifier
-    )
-}
-
-/**
- * Need to use view.getChildAt(0).height instead of just view.height,
- * so you can get all ScrollView content.
- */
-private fun loadBitmapFromScrollView(scrollView: ScrollView): Bitmap {
-    val bitmap = Bitmap.createBitmap(
-        scrollView.width,
-        scrollView.getChildAt(0).height,
-        Bitmap.Config.ARGB_8888
-    )
-    val canvas = Canvas(bitmap)
-    scrollView.draw(canvas)
-    return bitmap
-}
-
-class CaptureController {
-    var readyForCapture by mutableStateOf(false)
-        private set
-
-    fun capture() {
-        readyForCapture = true
-    }
-
-    internal fun captured() {
-        readyForCapture = false
-    }
-}
-
-@Composable
-fun rememberCaptureController(): CaptureController {
-    return remember { CaptureController() }
 }
 
 @Composable
@@ -949,42 +843,97 @@ fun BillReceiptButtonRow(
     ) {
 
         val context = LocalContext.current
+        var isPdfSentOnWhatsapp by remember{mutableStateOf(false)}
         Box(
             modifier = Modifier
                 .background(MainColor, RoundedCornerShape(15.dp))
                 .clip(RoundedCornerShape(15.dp))
                 .clickable {
-                    //whatsapp share
-                    var msg = "Dear ${customerItem.name},\n\n" +
-                            "Thanks for your visit at ${userDetails.name}.\n" +
-                            "Total bill amount : Rs ${bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100}\n\n" +
-                            "Bill Item\n"
-                    bill.itemList.forEachIndexed { index, billItem ->
-                        msg += "${index + 1}.${billItem.item_name} - Rs ${billItem.item_amount}\n"
-                    }
-
-                    msg += "\nAmount paid - Rs ${bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount}\n" +
-                            "Payment Mode : ${if (bill.itemCollection.bill_pay_mode.trim() == "Paid by Cash") "Cash" else "Online"}.\n"
-
-                    msg += if (bill.itemCollection.discount > 0.0) "Discount - Rs ${bill.itemCollection.discount}\n" else ""
-                    msg += if (bill.itemCollection.balance_amount > 0.0) "Balance - Rs ${bill.itemCollection.balance_amount}\n" else ""
-
-                    msg += "\nRegards,\nBilling App"
-
-                    val whatsappPackage = "com.whatsapp"
-                    val whatsappBusinessPackage = "com.whatsapp.w4b"
-                    val phone = "+91${customerItem.mobile}"
-
-                    try {
-                        sendWhatsAppMessage(context, msg, phone, whatsappPackage)
-                    } catch (e: PackageManager.NameNotFoundException) {
-                        sendWhatsAppMessage(context, msg, phone, whatsappBusinessPackage)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-
+                           isPdfSentOnWhatsapp = !isPdfSentOnWhatsapp
                 },
         ) {
+            if(isPdfSentOnWhatsapp){
+                Dialog(
+                    onDismissRequest = {
+                        isPdfSentOnWhatsapp = !isPdfSentOnWhatsapp
+                    },
+                    properties = DialogProperties(
+                        usePlatformDefaultWidth = false
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+
+                        val briView = ComposeView(context).apply {
+                            setContent {
+                                BillReceiptItemReceipt(
+                                    bill = bill, customerItem = customerItem,
+                                    shop = userDetails!!
+                                )
+                            }
+                        }
+
+                        val captureController = rememberCaptureController()
+                        ScrollableCapturable(controller = captureController, onCaptured ={bitmap , e ->
+                            if(bitmap != null) {
+                                GlobalScope.launch {
+                                    val filename = bill.itemCollection.bill_no + convertLongToDate(
+                                        bill.itemCollection.creation_date,
+                                        "_dd_MM_yyyy"
+                                    )
+                                    saveFile(filename, bitmap)
+//                                    viewPdf(context as Activity, filename)
+                                    //whatsapp share
+                                    var msg = "Dear ${customerItem.name},\n\n" +
+                                            "Thanks for your visit at ${userDetails.name}.\n" +
+                                            "Total bill amount : Rs ${bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100}\n\n" +
+                                            "Bill Item\n"
+                                    bill.itemList.forEachIndexed { index, billItem ->
+                                        msg += "${index + 1}.${billItem.item_name} - Rs ${billItem.item_amount}\n"
+                                    }
+
+                                    msg += "\nAmount paid - Rs ${bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount}\n" +
+                                            "Payment Mode : ${if (bill.itemCollection.bill_pay_mode.trim() == "Paid by Cash") "Cash" else "Online"}.\n"
+
+                                    msg += if (bill.itemCollection.discount > 0.0) "Discount - Rs ${bill.itemCollection.discount}\n" else ""
+                                    msg += if (bill.itemCollection.balance_amount > 0.0) "Balance - Rs ${bill.itemCollection.balance_amount}\n" else ""
+
+                                    msg += "\nRegards,\nBilling App"
+
+                                    val whatsappPackage = "com.whatsapp"
+                                    val whatsappBusinessPackage = "com.whatsapp.w4b"
+                                    val phone = "+91${customerItem.mobile}"
+
+                                    try {                                    sendWhatsAppMessageWithPDF(context, msg, phone, filename,whatsappPackage)
+
+                                    } catch (e: PackageManager.NameNotFoundException) {
+                                        sendWhatsAppMessageWithPDF(context, msg, phone, filename,whatsappBusinessPackage)
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                    isPdfSentOnWhatsapp = !isPdfSentOnWhatsapp
+                                }
+                            }else{
+                                Log.d("ERROR",e.toString())
+                                isPdfSentOnWhatsapp = !isPdfSentOnWhatsapp
+                            }
+
+                        } ) {
+                            AndroidView(factory = { briView })
+                        }
+                        LaunchedEffect(true) {
+                            captureController.capture()
+                        }
+                        Spacer(modifier = Modifier.height(50.dp))
+//                        ProgressBarCus {
+//
+//                        }
+                    }
+                }
+            }
             Row(
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -1096,6 +1045,32 @@ fun sendWhatsAppMessage(context: Context, message: String,phone : String,package
         // Handle exceptions related to starting the activity
     }
 }
+fun sendWhatsAppMessageWithPDF(context: Context, message: String, phone: String, pdfFilePath: String, packageName: String) {
+    val pdfFile = File("$STORAGE_DIR/$pdfFilePath.pdf")
+    val pdfUri = FileProvider.getUriForFile(context, "com.mycampus.billingapp.fileprovider", pdfFile)
+
+    if (pdfFile.exists()) {
+        val whatsappIntent = Intent(Intent.ACTION_SEND)
+        whatsappIntent.type = "application/pdf"
+        whatsappIntent.type = "text/plain"
+//        whatsappIntent.putExtra(Intent.EXTRA_STREAM, pdfUri)
+        whatsappIntent.putExtra(Intent.EXTRA_TEXT, message)
+        whatsappIntent.putExtra("jid", "$phone@s.whatsapp.net") // Specify the phone number
+        whatsappIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        whatsappIntent.setPackage(packageName)
+
+        try {
+            context.startActivity(whatsappIntent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Handle exceptions related to starting the activity
+        }
+    } else {
+        Log.d("PDFFILE",pdfFile.absolutePath)
+        // Handle the case where the PDF file does not exist
+    }
+}
+
 @Composable
 fun BillDetails(
     list: List<BillItemCollectionWithBillItems>,

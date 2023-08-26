@@ -91,6 +91,7 @@ dependencies {
     //excel
     implementation 'org.apache.poi:poi:5.1.0'
     implementation 'org.apache.poi:poi-ooxml:5.1.0'
+    implementation "dev.shreyaspatil:capturable:1.0.3"
 
 
 }
