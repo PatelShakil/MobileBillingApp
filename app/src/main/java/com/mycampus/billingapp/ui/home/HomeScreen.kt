@@ -1084,14 +1084,22 @@ fun PrinterPopup(
                     .fillMaxWidth()
                     .wrapContentHeight()
                     .background(Color(0xFFEAE9F0))
-                    .padding(20.dp)
+                    .padding(10.dp)
             ) {
-                Text(
-                    "Printer Connection",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontSize = 22.sp,
-                )
-                if (pairedDevices.isNotEmpty() && scannedDevices.isNotEmpty()) {
+
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    Icon(painterResource(R.drawable.ic_printer),"",
+                        tint = MainColor)
+                    Text(
+                        "Printer Connection",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 18.sp,
+                    )
+                }
+                Spacer(Modifier.height(5.dp))
+
+                Divider(modifier = Modifier.fillMaxWidth().height(.5.dp),color = Gray)
+                if(pairedDevices.size > 0 || scannedDevices.size > 0 ) {
                     BluetoothDeviceList(
                         pairedDevices = pairedDevices,
                         scannedDevices = scannedDevices,
@@ -1100,12 +1108,12 @@ fun PrinterPopup(
                             .padding(vertical = 20.dp)
                             .fillMaxHeight(.7f)
                     )
-                } else {
-                    //TODO//handle devices if no device detected | make call OnAPIFailed() composable
-
-                        Text("No device found",modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center)
-
+                }
+                if(pairedDevices.isEmpty()){
+                    Text("No Device Found",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth())
                 }
                 Row(
                     modifier = Modifier

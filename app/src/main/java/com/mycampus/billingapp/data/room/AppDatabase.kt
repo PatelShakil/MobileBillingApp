@@ -89,6 +89,13 @@ abstract class AppDatabase : RoomDatabase() {
         var backupBillItemsColCSVFile =  File(backupDir.absolutePath + "/billitemsCol.backup")
         var backupCustomersCSVFile =  File(backupDir.absolutePath + "/customers.backup")
 
+        if(backupBillItemCSVFile.exists())
+            backupBillItemCSVFile.delete()
+        if(backupBillItemsColCSVFile.exists())
+            backupBillItemsColCSVFile.delete()
+        if(backupCustomersCSVFile.exists())
+            backupCustomersCSVFile.delete()
+
         if(!backupBillItemCSVFile.exists())
             backupBillItemCSVFile.createNewFile()
         if(!backupBillItemsColCSVFile.exists())

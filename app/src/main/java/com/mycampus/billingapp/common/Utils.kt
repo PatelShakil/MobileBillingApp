@@ -111,6 +111,8 @@ class Utils {
         fun getPermissions(): Array<String> {
             return if (Build.VERSION.SDK_INT >= 33) {
                 arrayOf(
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Manifest.permission.BLUETOOTH_CONNECT,
                     Manifest.permission.READ_MEDIA_AUDIO,
                     Manifest.permission.READ_MEDIA_IMAGES,
                     Manifest.permission.READ_MEDIA_VIDEO,
@@ -118,6 +120,8 @@ class Utils {
                 )
             } else {
                 arrayOf(
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Manifest.permission.BLUETOOTH_CONNECT,
                     Manifest.permission.READ_EXTERNAL_STORAGE,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     Manifest.permission.MANAGE_EXTERNAL_STORAGE
@@ -206,6 +210,9 @@ class Utils {
             val filePath = File("$EXCEL_DIR/billcollection.xlsx")
             if (!File(EXCEL_DIR).exists())
                 File(EXCEL_DIR).mkdirs()
+
+            if(filePath.exists())
+                filePath.delete()
 
             if(!filePath.exists())
                 filePath.createNewFile()
