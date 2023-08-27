@@ -907,10 +907,10 @@ fun BillReceiptButtonRow(
                                     val whatsappBusinessPackage = "com.whatsapp.w4b"
                                     val phone = "+91${customerItem.mobile}"
 
-                                    try {                                    sendWhatsAppMessageWithPDF(context, msg, phone, filename,whatsappPackage)
-
+                                    try {
+                                        sendWhatsAppMessage(context, msg, phone,whatsappPackage)
                                     } catch (e: PackageManager.NameNotFoundException) {
-                                        sendWhatsAppMessageWithPDF(context, msg, phone, filename,whatsappBusinessPackage)
+                                        sendWhatsAppMessage(context, msg, phone,whatsappBusinessPackage)
                                     } catch (e: Exception) {
                                         e.printStackTrace()
                                     }

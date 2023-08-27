@@ -20,6 +20,7 @@ import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -942,14 +943,20 @@ fun SettingsPopup(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0xFFEAE9F0))
-                    .padding(20.dp)
+                    .padding(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    "Settings",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontSize = 22.sp,
-                    modifier = Modifier.padding(10.dp)
-                )
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    Icon(Icons.Default.Settings,"",
+                        tint = MainColor)
+                    Text(
+                        "Settings",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 18.sp,
+                    )
+                }
+                Spacer(Modifier.height(5.dp))
+                Divider(modifier = Modifier.fillMaxWidth().height(.5.dp),color = Gray)
                 Spacer(modifier = Modifier.height(10.dp))
                 Column() {
                     if (isEditable) {
