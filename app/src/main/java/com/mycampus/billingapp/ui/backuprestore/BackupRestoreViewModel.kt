@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.mycampus.billingapp.common.Utils.Companion.generateExcelSheet
 import com.mycampus.billingapp.data.models.BillItemCollectionExcel
 import com.mycampus.billingapp.data.room.AppDatabase
+import com.mycampus.billingapp.data.room.RestoreProgressListener
 import com.mycampus.billingapp.data.room.RoomDao
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
@@ -33,9 +34,9 @@ ViewModel(){
         }
     }
 
-    fun restoreDatabase(context:Context) {
+    fun restoreDatabase(progressListener: RestoreProgressListener) {
         viewModelScope.launch {
-            appDatabase.restoreDatabase(context)
+            appDatabase.restoreDatabase(progressListener)
         }
     }
 

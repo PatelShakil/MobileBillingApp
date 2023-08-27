@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.mycampus.billingapp.data.room.RestoreProgressListener
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.CustomerItem
@@ -60,7 +61,11 @@ fun BackupRestoreScreen(viewModel: BackupRestoreViewModel) {
         }
 
         Button(onClick = {
-            viewModel.restoreDatabase(context)
+            viewModel.restoreDatabase(object : RestoreProgressListener{
+                override fun onProgressUpdated(percentage: Int) {
+
+                }
+            })
         // Show a message that restore was successful
         },
             modifier = Modifier.fillMaxWidth(.8f),

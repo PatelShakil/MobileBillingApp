@@ -10,10 +10,14 @@ import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.CustomerItem
 import com.opencsv.CSVReader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
+import java.util.concurrent.atomic.AtomicInteger
 
 @Database(entities = [BillItemCollection::class, BillItem::class, CustomerItem::class], version = 1, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
@@ -38,7 +42,7 @@ abstract class AppDatabase : RoomDatabase() {
                 "${customerItem.email},${customerItem.address}"
     }
 
-    fun parseCsvRowToBillItemsCol(values: Array<String>): BillItemCollection {
+    fun parseCsvRowToBillItemsCol(values: List<String>): BillItemCollection {
         return BillItemCollection(
             id = values[0].toLong(),
             customerid = values[1].toLong(),
@@ -56,7 +60,7 @@ abstract class AppDatabase : RoomDatabase() {
             is_sync = values[13].toBoolean()
         )
     }
-    fun parseCsvRowToCustomerItem(csvRow: Array<String>): CustomerItem {
+    fun parseCsvRowToCustomerItem(csvRow: List<String>): CustomerItem {
         val values = csvRow
         return CustomerItem(
             id = values[0].toLong(),
@@ -67,7 +71,7 @@ abstract class AppDatabase : RoomDatabase() {
         )
     }
 
-    fun parseCsvRowToBillItem(csvRow: Array<String>): BillItem {
+    fun parseCsvRowToBillItem(csvRow: List<String>): BillItem {
         val values = csvRow
         return BillItem(
             id = values[0].toLong(),
@@ -132,13 +136,16 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
     // Restore the database from a backup file
-    suspend fun restoreDatabase(context: Context) {
-        val backupDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),"/myCampus/Backup")
-        var backupBillItemCSVFile =  File(backupDir.absolutePath + "/billitems.backup")
-        var backupBillItemsColCSVFile =  File(backupDir.absolutePath + "/billitemsCol.backup")
+ /*   suspend fun restoreDatabase(context: Context) {
+        val backupDir = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            "/myCampus/Backup"
+        )
+        var backupBillItemCSVFile = File(backupDir.absolutePath + "/billitems.backup")
+        var backupBillItemsColCSVFile = File(backupDir.absolutePath + "/billitemsCol.backup")
         var backupCustomersCSVFile = File(backupDir.absolutePath + "/customers.backup")
 
-        if(backupBillItemsColCSVFile.exists()){
+        if (backupBillItemsColCSVFile.exists()) {
             try {
                 val billitemcolscvr = CSVReader(withContext(Dispatchers.IO) {
                     FileReader(backupBillItemsColCSVFile.absoluteFile)
@@ -162,11 +169,110 @@ abstract class AppDatabase : RoomDatabase() {
                 billitemcvr.close()
                 customercvr.close()
                 Toast.makeText(context, "Backup Restored Successfully", Toast.LENGTH_SHORT).show()
-            }catch (e : Exception){
+            } catch (e: Exception) {
                 e.printStackTrace()
                 Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
             }
         }
+    }*/
+    suspend fun restoreDatabase(progressListener: RestoreProgressListener) {
+        val backupDir = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            "/myCampus/Backup"
+        )
+        val backupBillItemCSVFile = File(backupDir.absolutePath + "/billitems.backup")
+        val backupBillItemsColCSVFile = File(backupDir.absolutePath + "/billitemsCol.backup")
+        val backupCustomersCSVFile = File(backupDir.absolutePath + "/customers.backup")
+
+        val totalRowCount = calculateTotalRowCount(
+            backupBillItemsColCSVFile,
+            backupBillItemCSVFile,
+            backupCustomersCSVFile
+        )
+        val currentRowCount = AtomicInteger(0)
+
+        if (backupBillItemsColCSVFile.exists()) {
+            restoreCsvFile(
+                backupBillItemsColCSVFile,
+                currentRowCount,
+                totalRowCount,
+                progressListener
+            ) { row ->
+                GlobalScope.launch {
+                    delay(200)
+
+                    billingDao().insertBillItemCol(parseCsvRowToBillItemsCol(row))
+                }
+            }
+        }
+
+        if (backupBillItemCSVFile.exists()) {
+            restoreCsvFile(
+                backupBillItemCSVFile,
+                currentRowCount,
+                totalRowCount,
+                progressListener
+            ) { row ->
+                GlobalScope.launch {
+                    billingDao().insertBillItem(parseCsvRowToBillItem(row))
+                }
+            }
+        }
+
+        if (backupCustomersCSVFile.exists()) {
+            restoreCsvFile(
+                backupCustomersCSVFile,
+                currentRowCount,
+                totalRowCount,
+                progressListener
+            ) { row ->
+                GlobalScope.launch {
+                    billingDao().insertCustomer(parseCsvRowToCustomerItem(row))
+                }
+            }
+        }
+
+        withContext(Dispatchers.Main) {
+            progressListener.onProgressUpdated(100)
+        }
+    }
+
+    private suspend fun calculateTotalRowCount(vararg files: File): Int {
+        var totalRows = 0
+        for (file in files) {
+            if (file.exists()) {
+                val csvReader = CSVReader(withContext(Dispatchers.IO) {
+                    FileReader(file)
+                })
+                totalRows += csvReader.readAll().size
+                csvReader.close()
+            }
+        }
+        return totalRows
+    }
+
+    private suspend fun restoreCsvFile(
+        file: File,
+        currentRowCount: AtomicInteger,
+        totalRowCount: Int,
+        progressListener: RestoreProgressListener,
+        insertFunction: (List<String>) -> Unit
+    ) {
+        val csvReader = CSVReader(withContext(Dispatchers.IO) {
+            FileReader(file)
+        })
+        val rows = csvReader.readAll()
+
+        rows.forEach { row ->
+            insertFunction(row.toList())
+            val current = currentRowCount.incrementAndGet()
+            val progress = (current * 100) / totalRowCount
+            withContext(Dispatchers.Main) {
+                progressListener.onProgressUpdated(progress)
+            }
+        }
+
+        csvReader.close()
     }
 
 
@@ -174,3 +280,7 @@ abstract class AppDatabase : RoomDatabase() {
         private const val DATABASE_NAME = "billingapp_database"
     }
 }
+interface RestoreProgressListener {
+    fun onProgressUpdated(percentage: Int)
+}
+

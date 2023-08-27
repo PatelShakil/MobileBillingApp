@@ -44,6 +44,7 @@ import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
 import com.mycampus.billingapp.common.uicomponents.RestoreConfirmationDialog
 import com.mycampus.billingapp.data.models.BillItemCollectionExcel
 import com.mycampus.billingapp.data.models.UserDetails
+import com.mycampus.billingapp.data.room.RestoreProgressListener
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
@@ -87,7 +88,7 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
     viewModel.billitems.observeForever {
         billitems = it
     }
-    var billitemcollection:List<BillItemCollectionWithBillItems> ? = null
+    var billitemcollection: List<BillItemCollectionWithBillItems>? = null
     viewModel.billitemcollection.observeForever {
         billitemcollection = it
     }
@@ -95,7 +96,8 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
     viewModel.customers.observeForever {
         customers = it
     }
-    val collectionListExcel: MutableList<BillItemCollectionExcel> = emptyList<BillItemCollectionExcel>().toMutableList()
+    val collectionListExcel: MutableList<BillItemCollectionExcel> =
+        emptyList<BillItemCollectionExcel>().toMutableList()
 
 
     var isRestoreConfirm by remember { mutableStateOf(false) }
@@ -117,47 +119,62 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
 
             }, {
                 billitemsCol!!.forEach { bill ->
-                val customer = customers!!.filter { it.id == bill.customerid }[0]
-                val billitemList = billitemcollection!!.filter { it.itemCollection.bill_no == bill.bill_no }[0].itemList
-                collectionListExcel!!.add(
-                    BillItemCollectionExcel(
-                        bill.id,
-                        customer,
-                        bill.bill_no,
-                        bill.bill_pay_mode,
-                        bill.tax,
-                        bill.total_amount,
-                        bill.paid_amount,
-                        bill.balance_amount,
-                        bill.discount,
-                        bill.remarks,
-                        bill.creation_date,
-                        bill.bill_date,
-                        bill.created_by,
-                        billitemList,
-                        bill.is_sync
+                    val customer = customers!!.filter { it.id == bill.customerid }[0]
+                    val billitemList =
+                        billitemcollection!!.filter { it.itemCollection.bill_no == bill.bill_no }[0].itemList
+                    collectionListExcel!!.add(
+                        BillItemCollectionExcel(
+                            bill.id,
+                            customer,
+                            bill.bill_no,
+                            bill.bill_pay_mode,
+                            bill.tax,
+                            bill.total_amount,
+                            bill.paid_amount,
+                            bill.balance_amount,
+                            bill.discount,
+                            bill.remarks,
+                            bill.creation_date,
+                            bill.bill_date,
+                            bill.created_by,
+                            billitemList,
+                            bill.is_sync
+                        )
                     )
-                )
-            }
-                Log.d("Collection",collectionListExcel.toString())
+                }
+                Log.d("Collection", collectionListExcel.toString())
                 viewModel.generateExcel(collectionListExcel)
             })
         viewModel.downloadExcelResult.collectAsState().let {
-            if(it.value){
+            if (it.value) {
                 ProgressBarCus {
 
                 }
             }
         }
+        var progress by remember { mutableStateOf(0) }
         if (isRestoreConfirm) {
             RestoreConfirmationDialog(
                 onDismiss = {
                     isRestoreConfirm = false
+                    progress = 0
                 }) {
-                viewModel.restoreDatabase(context)
+                viewModel.restoreDatabase(object : RestoreProgressListener {
+                    override fun onProgressUpdated(percentage: Int) {
+                        progress = percentage
+                        Log.d("Progress", percentage.toString())
+                    }
+                })
+            }
+            if (progress in 1..100) {
+                ProgressBarCus(onDismiss = { }, progress = progress / 100f)
+            }
+            if (progress == 100) {
                 isRestoreConfirm = false
+                progress = 0
             }
         }
+
 
         NavHost(
             navController = navController,
