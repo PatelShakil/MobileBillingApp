@@ -61,7 +61,7 @@ fun BackupRestoreScreen(viewModel: BackupRestoreViewModel) {
         }
 
         Button(onClick = {
-            viewModel.restoreDatabase(object : RestoreProgressListener{
+            viewModel.restoreDatabase(context,object : RestoreProgressListener{
                 override fun onProgressUpdated(percentage: Int) {
 
                 }

@@ -19,12 +19,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,8 +52,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.uicomponents.ErrorMessage
+import com.mycampus.billingapp.common.uicomponents.SearchBar
 import com.mycampus.billingapp.data.room.entities.CustomerItem
-import com.mycampus.billingapp.ui.home.LightMainColor
 import com.mycampus.billingapp.ui.home.MainColor
 
 @Composable
@@ -74,7 +71,7 @@ fun CustomerScreen(viewModel: CustomerViewModel, navController: NavController) {
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            SearchBar(onTextChanged = { value ->
+            SearchBar("Customer",onTextChanged = { value ->
                 customerCol = if (value.isNotEmpty())
                     customerColOg.filter { it.name.lowercase().contains(value.lowercase()) }
                 else
@@ -123,65 +120,6 @@ fun CustomerScreen(viewModel: CustomerViewModel, navController: NavController) {
     }
 }
 
-@Composable
-fun SearchBar(onTextChanged: (String) -> Unit) {
-    var value by remember { mutableStateOf("") }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LightMainColor),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(.95f)
-                .padding(vertical = 15.dp),
-            border = BorderStroke(.5.dp, Color.Gray),
-            elevation = CardDefaults.cardElevation(
-                18.dp
-            )
-        ) {
-            TextField(
-                value = value, onValueChange = {
-                    value = it
-                    onTextChanged(value)
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search, contentDescription = "",
-                        tint = MainColor
-                    )
-                },
-                trailingIcon = {
-                    if (value.isNotEmpty()) {
-                        Icon(
-                            Icons.Default.Clear, "",
-                            tint = MainColor,
-                            modifier = Modifier.clickable {
-                                value = ""
-                            }
-                        )
-                    }
-                },
-                label = {
-                    Text(
-                        "Search Customer",
-                        style = MaterialTheme.typography.titleSmall
-                    )
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = TextFieldDefaults.textFieldColors(
-                    focusedIndicatorColor = Color.Transparent,
-                    backgroundColor = Color.White,
-                    cursorColor = MainColor
-                )
-            )
-        }
-    }
-
-}
 
 @Composable
 fun CustomerItemSample(customer: CustomerItem) {

@@ -3,23 +3,33 @@ package com.mycampus.billingapp.ui.nav
 import android.bluetooth.BluetoothManager
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Card
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -35,11 +45,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mycampus.billingapp.R
+import com.mycampus.billingapp.common.Utils.Companion.sendWhatsAppMessage
 import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
 import com.mycampus.billingapp.common.uicomponents.RestoreConfirmationDialog
 import com.mycampus.billingapp.data.models.BillItemCollectionExcel
@@ -48,9 +62,11 @@ import com.mycampus.billingapp.data.room.RestoreProgressListener
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
+import com.mycampus.billingapp.data.room.entities.ContactItem
 import com.mycampus.billingapp.data.room.entities.CustomerItem
 import com.mycampus.billingapp.ui.backuprestore.BackupRestoreScreen
 import com.mycampus.billingapp.ui.backuprestore.BackupRestoreViewModel
+import com.mycampus.billingapp.ui.contact.ContactMainScreen
 import com.mycampus.billingapp.ui.customer.CustomerScreen
 import com.mycampus.billingapp.ui.detail.BillDetailScreen
 import com.mycampus.billingapp.ui.home.HomeScreen
@@ -101,6 +117,8 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
 
 
     var isRestoreConfirm by remember { mutableStateOf(false) }
+    var isPromotionClick by remember { mutableStateOf(false) }
+    var syncContacts by remember{ mutableStateOf<List<ContactItem>>(emptyList()) }
     Column {
         HeaderLayout(title, state, userViewModel, onStartScan = {
             if (!isBluetoothEnabled) {
@@ -144,6 +162,16 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
                 }
                 Log.d("Collection", collectionListExcel.toString())
                 viewModel.generateExcel(collectionListExcel)
+            },
+            onSyncContacts = {
+                             navController.navigate(Screen.Contact.route)
+
+            },
+            onPromotionClick = {
+                userViewModel.allSyncContacts.observeForever{
+                    syncContacts = it
+                }
+                isPromotionClick = !isPromotionClick
             })
         viewModel.downloadExcelResult.collectAsState().let {
             if (it.value) {
@@ -153,13 +181,18 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
             }
         }
         var progress by remember { mutableStateOf(0) }
+        if(isPromotionClick){
+            PromotionDialog(syncContacts){
+                isPromotionClick = !isPromotionClick
+            }
+        }
         if (isRestoreConfirm) {
             RestoreConfirmationDialog(
                 onDismiss = {
                     isRestoreConfirm = false
                     progress = 0
                 }) {
-                viewModel.restoreDatabase(object : RestoreProgressListener {
+                viewModel.restoreDatabase(context,object : RestoreProgressListener {
                     override fun onProgressUpdated(percentage: Int) {
                         progress = percentage
                         Log.d("Progress", percentage.toString())
@@ -196,6 +229,10 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
                 BackupRestoreScreen(viewModel = hiltViewModel())
                 title = "Backup & Restore"
             }
+            composable(Screen.Contact.route) {
+                ContactMainScreen(viewModel = hiltViewModel(),navController)
+                title = "Contacts"
+            }
         }
     }
 }
@@ -210,7 +247,9 @@ fun HeaderLayout(
     onCustomerClick: () -> Unit,
     onBackup: () -> Unit,
     onRestore: () -> Unit,
-    onDownloadExcel: () -> Unit
+    onDownloadExcel: () -> Unit,
+    onSyncContacts:() -> Unit,
+    onPromotionClick:() -> Unit
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
@@ -352,6 +391,38 @@ fun HeaderLayout(
                         DropdownMenuItem(
                             onClick = {
                                 isMenuExpanded = false
+                                onSyncContacts()
+                                // Handle Others menu item click
+                            }
+                        ) {
+                            Image(
+                                Icons.Default.AccountBox,
+                                contentDescription = "",
+                                colorFilter = ColorFilter.tint(MainColor),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("Sync Contacts")
+                        }
+                        DropdownMenuItem(
+                            onClick = {
+                                isMenuExpanded = false
+                                onPromotionClick()
+                                // Handle Others menu item click
+                            }
+                        ) {
+                            Image(
+                                painterResource(id = R.drawable.ic_promotion),
+                                contentDescription = "",
+                                colorFilter = ColorFilter.tint(MainColor),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("Promotion")
+                        }
+                        DropdownMenuItem(
+                            onClick = {
+                                isMenuExpanded = false
                                 // Handle Others menu item click
                             }
                         ) {
@@ -388,5 +459,72 @@ fun HeaderLayout(
             onStartScan = onStartScan,
             onStopScan = onStopScan,
         ) { isPrinterExpanded = false }
+    }
+}
+
+@Composable
+fun PromotionDialog(list : List<ContactItem>,onDismiss:()->Unit) {
+    val context = LocalContext.current
+    Dialog(onDismissRequest = {onDismiss()},
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Card(modifier = Modifier.fillMaxWidth(.95f)){
+            Column {
+                Spacer(modifier = Modifier.height(5.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        painterResource(R.drawable.ic_promotion), "",
+                        tint = MainColor
+                    )
+                    Text(
+                        "Promotion",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 18.sp,
+                    )
+                }
+                Spacer(Modifier.height(5.dp))
+                Divider(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(.5.dp), color = Color.Gray)
+                Spacer(modifier = Modifier.height(5.dp))
+                LazyColumn(modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally){
+                    items(list){
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)) {
+                            Column(modifier = Modifier.weight(.9f)) {
+                                Text(it.name,
+                                    fontSize = 14.sp)
+                                Text(it.mobileNo,
+                                    fontSize = 12.sp)
+                            }
+                            Box(modifier = Modifier
+                                .background(MainColor, RoundedCornerShape(20.dp))
+                                .clickable{
+                                //Send Click
+                                val msg = "ecard.com/${it.mobileNo.replace(" ","")}"
+                                sendWhatsAppMessage(context,msg,it.mobileNo)
+                            }){
+                                Row(verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)) {
+                                    Text("Send",
+                                        color = Color.White)
+//                                    Icon(Icons.Default.Send, "", tint = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }

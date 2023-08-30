@@ -1,10 +1,6 @@
 package com.mycampus.billingapp.ui.detail
 
 import android.app.Activity
-import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -59,14 +55,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.ScrollableCapturable
 import com.mycampus.billingapp.common.Utils
-import com.mycampus.billingapp.common.Utils.Companion.STORAGE_DIR
 import com.mycampus.billingapp.common.Utils.Companion.convertLongToDate
 import com.mycampus.billingapp.common.Utils.Companion.saveFile
+import com.mycampus.billingapp.common.Utils.Companion.sendWhatsAppMessage
 import com.mycampus.billingapp.common.Utils.Companion.viewPdf
 import com.mycampus.billingapp.common.rememberCaptureController
 import com.mycampus.billingapp.common.uicomponents.DatePickerDialogCustom
@@ -83,7 +78,6 @@ import com.mycampus.billingapp.ui.home.MainColor
 import com.mycampus.billingapp.ui.home.UserViewModel
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -843,97 +837,31 @@ fun BillReceiptButtonRow(
     ) {
 
         val context = LocalContext.current
-        var isPdfSentOnWhatsapp by remember{mutableStateOf(false)}
         Box(
             modifier = Modifier
                 .background(MainColor, RoundedCornerShape(15.dp))
                 .clip(RoundedCornerShape(15.dp))
                 .clickable {
-                           isPdfSentOnWhatsapp = !isPdfSentOnWhatsapp
+                    var msg = "Dear ${customerItem.name},\n\n" +
+                        "Thanks for your visit at ${userDetails.name}.\n" +
+                        "Total bill amount : Rs ${bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100}\n\n" +
+                        "Bill Item\n"
+                    bill.itemList.forEachIndexed { index, billItem ->
+                        msg += "${index + 1}.${billItem.item_name} - Rs ${billItem.item_amount}\n"
+                    }
+
+                    msg += "\nAmount paid - Rs ${bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount}\n" +
+                            "Payment Mode : ${if (bill.itemCollection.bill_pay_mode.trim() == "Paid by Cash") "Cash" else "Online"}.\n"
+
+                    msg += if (bill.itemCollection.discount > 0.0) "Discount - Rs ${bill.itemCollection.discount}\n" else ""
+                    msg += if (bill.itemCollection.balance_amount > 0.0) "Balance - Rs ${bill.itemCollection.balance_amount}\n" else ""
+
+                    msg += "\nRegards,\nBilling App"
+
+                    sendWhatsAppMessage(context,msg,"91${customerItem.mobile}")
+
                 },
         ) {
-            if(isPdfSentOnWhatsapp){
-                Dialog(
-                    onDismissRequest = {
-                        isPdfSentOnWhatsapp = !isPdfSentOnWhatsapp
-                    },
-                    properties = DialogProperties(
-                        usePlatformDefaultWidth = false
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-
-                        val briView = ComposeView(context).apply {
-                            setContent {
-                                BillReceiptItemReceipt(
-                                    bill = bill, customerItem = customerItem,
-                                    shop = userDetails!!
-                                )
-                            }
-                        }
-
-                        val captureController = rememberCaptureController()
-                        ScrollableCapturable(controller = captureController, onCaptured ={bitmap , e ->
-                            if(bitmap != null) {
-                                GlobalScope.launch {
-                                    val filename = bill.itemCollection.bill_no + convertLongToDate(
-                                        bill.itemCollection.creation_date,
-                                        "_dd_MM_yyyy"
-                                    )
-                                    saveFile(filename, bitmap)
-//                                    viewPdf(context as Activity, filename)
-                                    //whatsapp share
-                                    var msg = "Dear ${customerItem.name},\n\n" +
-                                            "Thanks for your visit at ${userDetails.name}.\n" +
-                                            "Total bill amount : Rs ${bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100}\n\n" +
-                                            "Bill Item\n"
-                                    bill.itemList.forEachIndexed { index, billItem ->
-                                        msg += "${index + 1}.${billItem.item_name} - Rs ${billItem.item_amount}\n"
-                                    }
-
-                                    msg += "\nAmount paid - Rs ${bill.itemCollection.total_amount + (bill.itemCollection.total_amount * bill.itemCollection.tax) / 100 - bill.itemCollection.discount}\n" +
-                                            "Payment Mode : ${if (bill.itemCollection.bill_pay_mode.trim() == "Paid by Cash") "Cash" else "Online"}.\n"
-
-                                    msg += if (bill.itemCollection.discount > 0.0) "Discount - Rs ${bill.itemCollection.discount}\n" else ""
-                                    msg += if (bill.itemCollection.balance_amount > 0.0) "Balance - Rs ${bill.itemCollection.balance_amount}\n" else ""
-
-                                    msg += "\nRegards,\nBilling App"
-
-                                    val whatsappPackage = "com.whatsapp"
-                                    val whatsappBusinessPackage = "com.whatsapp.w4b"
-                                    val phone = "+91${customerItem.mobile}"
-
-                                    try {
-                                        sendWhatsAppMessage(context, msg, phone,whatsappPackage)
-                                    } catch (e: PackageManager.NameNotFoundException) {
-                                        sendWhatsAppMessage(context, msg, phone,whatsappBusinessPackage)
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                    isPdfSentOnWhatsapp = !isPdfSentOnWhatsapp
-                                }
-                            }else{
-                                Log.d("ERROR",e.toString())
-                                isPdfSentOnWhatsapp = !isPdfSentOnWhatsapp
-                            }
-
-                        } ) {
-                            AndroidView(factory = { briView })
-                        }
-                        LaunchedEffect(true) {
-                            captureController.capture()
-                        }
-                        Spacer(modifier = Modifier.height(50.dp))
-//                        ProgressBarCus {
-//
-//                        }
-                    }
-                }
-            }
             Row(
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -1026,48 +954,6 @@ fun BillReceiptButtonRow(
 //                    Text("Delete", color = Color.White)
             }
         }
-    }
-}
-fun sendWhatsAppMessage(context: Context, message: String,phone : String,packageName : String) {
-    val whatsAppTxt = Uri.encode(message) // Encode the message
-
-    // Create the WhatsApp message URI with the formatted message
-    val whatsappUri = Uri.parse("https://api.whatsapp.com/send?phone=$phone&text=$whatsAppTxt")
-
-    // Create an Intent to open the WhatsApp chat
-    val whatsappIntent = Intent(Intent.ACTION_VIEW, whatsappUri)
-    whatsappIntent.setPackage(packageName)
-
-    try {
-        context.startActivity(whatsappIntent)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        // Handle exceptions related to starting the activity
-    }
-}
-fun sendWhatsAppMessageWithPDF(context: Context, message: String, phone: String, pdfFilePath: String, packageName: String) {
-    val pdfFile = File("$STORAGE_DIR/$pdfFilePath.pdf")
-    val pdfUri = FileProvider.getUriForFile(context, "com.mycampus.billingapp.fileprovider", pdfFile)
-
-    if (pdfFile.exists()) {
-        val whatsappIntent = Intent(Intent.ACTION_SEND)
-        whatsappIntent.type = "application/pdf"
-        whatsappIntent.type = "text/plain"
-//        whatsappIntent.putExtra(Intent.EXTRA_STREAM, pdfUri)
-        whatsappIntent.putExtra(Intent.EXTRA_TEXT, message)
-        whatsappIntent.putExtra("jid", "$phone@s.whatsapp.net") // Specify the phone number
-        whatsappIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        whatsappIntent.setPackage(packageName)
-
-        try {
-            context.startActivity(whatsappIntent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // Handle exceptions related to starting the activity
-        }
-    } else {
-        Log.d("PDFFILE",pdfFile.absolutePath)
-        // Handle the case where the PDF file does not exist
     }
 }
 

@@ -3,12 +3,18 @@ package com.mycampus.billingapp.common
 import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.pdf.PdfDocument
+import android.net.Uri
 import android.os.Build
+import android.util.Log
 import android.view.View
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.mycampus.billingapp.data.models.BillItemCollectionExcel
 import org.apache.poi.ss.usermodel.CellStyle
@@ -116,16 +122,29 @@ class Utils {
                     Manifest.permission.READ_MEDIA_AUDIO,
                     Manifest.permission.READ_MEDIA_IMAGES,
                     Manifest.permission.READ_MEDIA_VIDEO,
-                    Manifest.permission.MANAGE_EXTERNAL_STORAGE
+                    Manifest.permission.MANAGE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_CONTACTS
                 )
             } else {
                 arrayOf(
-                    Manifest.permission.BLUETOOTH_SCAN,
-                    Manifest.permission.BLUETOOTH_CONNECT,
                     Manifest.permission.READ_EXTERNAL_STORAGE,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.MANAGE_EXTERNAL_STORAGE
+                    Manifest.permission.MANAGE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_CONTACTS,
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Manifest.permission.BLUETOOTH_CONNECT,
                 )
+            }
+        }
+        fun requestPermissionsIfNecessary(activity: Activity) {
+            val permissions = getPermissions()
+
+            val notGrantedPermissions = permissions.filter {
+                ContextCompat.checkSelfPermission(activity, it) != PackageManager.PERMISSION_GRANTED
+            }.toTypedArray()
+
+            if (notGrantedPermissions.isNotEmpty()) {
+                ActivityCompat.requestPermissions(activity, notGrantedPermissions, 1)
             }
         }
 
@@ -223,13 +242,68 @@ class Utils {
 
             workbook.close()
         }
-        fun setAutoSizeColumns(sheet: XSSFSheet, columnCount: Int) {
+        private fun setAutoSizeColumns(sheet: XSSFSheet, columnCount: Int) {
             for (colIndex in 0 until columnCount) {
                 val maxColumnWidth = 256 * 20 // Default column width (256 characters)
                 val columnWidth = Math.min(maxColumnWidth, sheet.getColumnWidth(colIndex))
                 sheet.setColumnWidth(colIndex, columnWidth)
             }
         }
+        fun sendWhatsAppMessage(context: Context, message: String, mobile : String) {
+            val whatsappPackage = "com.whatsapp"
+            val whatsappBusinessPackage = "com.whatsapp.w4b"
+            val phone = if(mobile.replace(" ","").startsWith("+"))
+                mobile.replace(" ","")
+            else
+                "+91${mobile.replace(" ","")}"
+            val whatsAppTxt = Uri.encode(message) // Encode the message
+
+            // Create the WhatsApp message URI with the formatted message
+            val whatsappUri = Uri.parse("https://api.whatsapp.com/send?phone=$phone&text=$whatsAppTxt")
+
+            // Create an Intent to open the WhatsApp chat
+            val whatsappIntent = Intent(Intent.ACTION_VIEW, whatsappUri)
+            try {
+                whatsappIntent.setPackage(whatsappPackage)
+
+            } catch (e: PackageManager.NameNotFoundException) {
+                whatsappIntent.setPackage(whatsappBusinessPackage)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            try {
+                context.startActivity(whatsappIntent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Handle exceptions related to starting the activity
+            }
+        }
+        fun sendWhatsAppMessageWithPDF(context: Context, message: String, phone: String, pdfFilePath: String, packageName: String) {
+            val pdfFile = File("$STORAGE_DIR/$pdfFilePath.pdf")
+            val pdfUri = FileProvider.getUriForFile(context, "com.mycampus.billingapp.fileprovider", pdfFile)
+
+            if (pdfFile.exists()) {
+                val whatsappIntent = Intent(Intent.ACTION_SEND)
+                whatsappIntent.type = "application/pdf"
+                whatsappIntent.type = "text/plain"
+//        whatsappIntent.putExtra(Intent.EXTRA_STREAM, pdfUri)
+                whatsappIntent.putExtra(Intent.EXTRA_TEXT, message)
+                whatsappIntent.putExtra("jid", "$phone@s.whatsapp.net") // Specify the phone number
+                whatsappIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                whatsappIntent.setPackage(packageName)
+
+                try {
+                    context.startActivity(whatsappIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    // Handle exceptions related to starting the activity
+                }
+            } else {
+                Log.d("PDFFILE",pdfFile.absolutePath)
+                // Handle the case where the PDF file does not exist
+            }
+        }
+
     }
 }
 

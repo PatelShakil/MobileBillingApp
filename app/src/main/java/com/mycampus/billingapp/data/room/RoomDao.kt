@@ -9,6 +9,7 @@ import androidx.room.Transaction
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
+import com.mycampus.billingapp.data.room.entities.ContactItem
 import com.mycampus.billingapp.data.room.entities.CustomerItem
 import kotlinx.coroutines.flow.Flow
 
@@ -24,6 +25,12 @@ interface RoomDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBillItem(item : BillItem)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertContactItem(item : ContactItem)
+
+    @Query("SELECT * FROM contact_item")
+    fun getAllContacts():Flow<List<ContactItem>>
     @Delete
     suspend fun deleteBillItemCol(itemCol: BillItemCollection)
 

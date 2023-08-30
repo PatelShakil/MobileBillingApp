@@ -14,7 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.mycampus.billingapp.common.Utils.Companion.getPermissions
+import com.mycampus.billingapp.common.Utils
 import com.mycampus.billingapp.ui.nav.AppNavigation
 import com.mycampus.billingapp.ui.theme.BiilingappTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -53,15 +53,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            permissionLauncher.launch(
-                getPermissions() +
-                arrayOf(
-                    Manifest.permission.BLUETOOTH_SCAN,
-                    Manifest.permission.BLUETOOTH_CONNECT,
-                )
-            )
-        }
+        Utils.requestPermissionsIfNecessary(this)
         setContent {
             BiilingappTheme {
                 // A surface container using the 'background' color from the theme

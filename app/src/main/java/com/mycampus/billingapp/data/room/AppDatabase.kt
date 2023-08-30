@@ -3,10 +3,13 @@ package com.mycampus.billingapp.data.room
 import android.content.Context
 import android.os.Environment
 import android.widget.Toast
+import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
+import com.mycampus.billingapp.data.room.entities.ContactItem
 import com.mycampus.billingapp.data.room.entities.CustomerItem
 import com.opencsv.CSVReader
 import kotlinx.coroutines.Dispatchers
@@ -19,11 +22,14 @@ import java.io.FileReader
 import java.io.FileWriter
 import java.util.concurrent.atomic.AtomicInteger
 
-@Database(entities = [BillItemCollection::class, BillItem::class, CustomerItem::class], version = 1, exportSchema = false)
+@Database(
+    entities = [BillItemCollection::class, BillItem::class, CustomerItem::class, ContactItem::class],
+    version = 1,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun billingDao(): RoomDao
     // Backup the database to a file
-
 
 
     fun generateBillItemsColCsvRow(billCol: BillItemCollection): String {
@@ -37,6 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
         return "${billItem.id},${billItem.bill_info_id},${billItem.item_name}," +
                 "${billItem.item_amount},${billItem.creation_date},${billItem.created_by}"
     }
+
     fun generateCustomerCsvRow(customerItem: CustomerItem): String {
         return "${customerItem.id},${customerItem.name},${customerItem.mobile}," +
                 "${customerItem.email},${customerItem.address}"
@@ -60,6 +67,7 @@ abstract class AppDatabase : RoomDatabase() {
             is_sync = values[13].toBoolean()
         )
     }
+
     fun parseCsvRowToCustomerItem(csvRow: List<String>): CustomerItem {
         val values = csvRow
         return CustomerItem(
@@ -84,42 +92,50 @@ abstract class AppDatabase : RoomDatabase() {
     }
 
 
-    suspend fun backupDatabase(billitemCols : List<BillItemCollection>,billitems:List<BillItem>,customers : List<CustomerItem>,context: Context) {
+    suspend fun backupDatabase(
+        billitemCols: List<BillItemCollection>,
+        billitems: List<BillItem>,
+        customers: List<CustomerItem>,
+        context: Context
+    ) {
 
-        val backupDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),"/myCampus/Backup")
-        if(!backupDir.exists())
+        val backupDir = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            "/myCampus/Backup"
+        )
+        if (!backupDir.exists())
             backupDir.mkdirs()
-        var backupBillItemCSVFile =  File(backupDir.absolutePath + "/billitems.backup")
-        var backupBillItemsColCSVFile =  File(backupDir.absolutePath + "/billitemsCol.backup")
-        var backupCustomersCSVFile =  File(backupDir.absolutePath + "/customers.backup")
+        var backupBillItemCSVFile = File(backupDir.absolutePath + "/billitems.backup")
+        var backupBillItemsColCSVFile = File(backupDir.absolutePath + "/billitemsCol.backup")
+        var backupCustomersCSVFile = File(backupDir.absolutePath + "/customers.backup")
 
-        if(backupBillItemCSVFile.exists())
+        if (backupBillItemCSVFile.exists())
             backupBillItemCSVFile.delete()
-        if(backupBillItemsColCSVFile.exists())
+        if (backupBillItemsColCSVFile.exists())
             backupBillItemsColCSVFile.delete()
-        if(backupCustomersCSVFile.exists())
+        if (backupCustomersCSVFile.exists())
             backupCustomersCSVFile.delete()
 
-        if(!backupBillItemCSVFile.exists())
+        if (!backupBillItemCSVFile.exists())
             backupBillItemCSVFile.createNewFile()
-        if(!backupBillItemsColCSVFile.exists())
+        if (!backupBillItemsColCSVFile.exists())
             backupBillItemsColCSVFile.createNewFile()
-        if(!backupCustomersCSVFile.exists())
+        if (!backupCustomersCSVFile.exists())
             backupCustomersCSVFile.createNewFile()
 
-        try{
+        try {
             val billItemsColfw = FileWriter(backupBillItemsColCSVFile)
             val billItemfw = FileWriter(backupBillItemCSVFile)
             val customersfw = FileWriter(backupCustomersCSVFile)
 
-            billitemCols.forEach {billCol ->
-                billItemsColfw.append(""+generateBillItemsColCsvRow(billCol)+"\n")
-                }
-            billitems.forEach {billItem->
-                billItemfw.append(""+generateBillItemCsvRow(billItem)+"\n")
+            billitemCols.forEach { billCol ->
+                billItemsColfw.append("" + generateBillItemsColCsvRow(billCol) + "\n")
             }
-            customers.forEach {customerItem ->
-                customersfw.append(""+generateCustomerCsvRow(customerItem)+"\n")
+            billitems.forEach { billItem ->
+                billItemfw.append("" + generateBillItemCsvRow(billItem) + "\n")
+            }
+            customers.forEach { customerItem ->
+                customersfw.append("" + generateCustomerCsvRow(customerItem) + "\n")
             }
             withContext(Dispatchers.IO) {
                 billItemsColfw.flush()
@@ -130,64 +146,83 @@ abstract class AppDatabase : RoomDatabase() {
                 customersfw.close()
             }
             Toast.makeText(context, "Backup Exported Successfully", Toast.LENGTH_SHORT).show()
-        }catch (e : Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(context, e.localizedMessage, Toast.LENGTH_SHORT).show()
         }
     }
-    // Restore the database from a backup file
- /*   suspend fun restoreDatabase(context: Context) {
-        val backupDir = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-            "/myCampus/Backup"
-        )
-        var backupBillItemCSVFile = File(backupDir.absolutePath + "/billitems.backup")
-        var backupBillItemsColCSVFile = File(backupDir.absolutePath + "/billitemsCol.backup")
-        var backupCustomersCSVFile = File(backupDir.absolutePath + "/customers.backup")
 
-        if (backupBillItemsColCSVFile.exists()) {
-            try {
-                val billitemcolscvr = CSVReader(withContext(Dispatchers.IO) {
-                    FileReader(backupBillItemsColCSVFile.absoluteFile)
-                })
-                billitemcolscvr.readAll().forEach {
-                    billingDao().insertBillItemCol(parseCsvRowToBillItemsCol(it))
-                }
-                val billitemcvr = CSVReader(withContext(Dispatchers.IO) {
-                    FileReader(backupBillItemCSVFile.absoluteFile)
-                })
-                billitemcvr.readAll().forEach {
-                    billingDao().insertBillItem(parseCsvRowToBillItem(it))
-                }
-                val customercvr = CSVReader(withContext(Dispatchers.IO) {
-                    FileReader(backupCustomersCSVFile.absoluteFile)
-                })
-                customercvr.readAll().forEach {
-                    billingDao().insertCustomer(parseCsvRowToCustomerItem(it))
-                }
-                billitemcolscvr.close()
-                billitemcvr.close()
-                customercvr.close()
-                Toast.makeText(context, "Backup Restored Successfully", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
-            }
-        }
-    }*/
-    suspend fun restoreDatabase(progressListener: RestoreProgressListener) {
+    // Restore the database from a backup file
+    /*   suspend fun restoreDatabase(context: Context) {
+           val backupDir = File(
+               Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+               "/myCampus/Backup"
+           )
+           var backupBillItemCSVFile = File(backupDir.absolutePath + "/billitems.backup")
+           var backupBillItemsColCSVFile = File(backupDir.absolutePath + "/billitemsCol.backup")
+           var backupCustomersCSVFile = File(backupDir.absolutePath + "/customers.backup")
+
+           if (backupBillItemsColCSVFile.exists()) {
+               try {
+                   val billitemcolscvr = CSVReader(withContext(Dispatchers.IO) {
+                       FileReader(backupBillItemsColCSVFile.absoluteFile)
+                   })
+                   billitemcolscvr.readAll().forEach {
+                       billingDao().insertBillItemCol(parseCsvRowToBillItemsCol(it))
+                   }
+                   val billitemcvr = CSVReader(withContext(Dispatchers.IO) {
+                       FileReader(backupBillItemCSVFile.absoluteFile)
+                   })
+                   billitemcvr.readAll().forEach {
+                       billingDao().insertBillItem(parseCsvRowToBillItem(it))
+                   }
+                   val customercvr = CSVReader(withContext(Dispatchers.IO) {
+                       FileReader(backupCustomersCSVFile.absoluteFile)
+                   })
+                   customercvr.readAll().forEach {
+                       billingDao().insertCustomer(parseCsvRowToCustomerItem(it))
+                   }
+                   billitemcolscvr.close()
+                   billitemcvr.close()
+                   customercvr.close()
+                   Toast.makeText(context, "Backup Restored Successfully", Toast.LENGTH_SHORT).show()
+               } catch (e: Exception) {
+                   e.printStackTrace()
+                   Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
+               }
+           }
+       }*/
+    suspend fun restoreDatabase(context: Context, progressListener: RestoreProgressListener) {
         val backupDir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             "/myCampus/Backup"
         )
+        withContext(Dispatchers.IO){
         val backupBillItemCSVFile = File(backupDir.absolutePath + "/billitems.backup")
         val backupBillItemsColCSVFile = File(backupDir.absolutePath + "/billitemsCol.backup")
         val backupCustomersCSVFile = File(backupDir.absolutePath + "/customers.backup")
-
+        val bif = context.contentResolver.openInputStream(FileProvider.getUriForFile(context,"com.mycampus.billingapp.fileprovider",backupBillItemCSVFile))
+        val bicf = context.contentResolver.openInputStream(backupBillItemsColCSVFile.toUri())
+        val bcf = context.contentResolver.openInputStream(backupCustomersCSVFile.toUri())
+        val bifCache = File(context.cacheDir, "billitems.backup")
+        bifCache.outputStream().use { op ->
+            bif!!.copyTo(op)
+        }
+        val bicfCache = File(context.cacheDir, "billitemsCol.backup")
+        bicfCache.outputStream().use {
+            bicf!!.copyTo(it)
+        }
+        val bcfCache = File(context.cacheDir, "customers.backup")
+        bcfCache.outputStream().use {
+            bcf!!.copyTo(it)
+        }
+        bif!!.close()
+        bicf!!.close()
+        bcf!!.close()
         val totalRowCount = calculateTotalRowCount(
-            backupBillItemsColCSVFile,
-            backupBillItemCSVFile,
-            backupCustomersCSVFile
+            bifCache,
+            bicfCache,
+            bcfCache
         )
         val currentRowCount = AtomicInteger(0)
 
@@ -232,8 +267,7 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        withContext(Dispatchers.Main) {
-            progressListener.onProgressUpdated(100)
+           progressListener.onProgressUpdated(100)
         }
     }
 
@@ -280,6 +314,7 @@ abstract class AppDatabase : RoomDatabase() {
         private const val DATABASE_NAME = "billingapp_database"
     }
 }
+
 interface RestoreProgressListener {
     fun onProgressUpdated(percentage: Int)
 }
