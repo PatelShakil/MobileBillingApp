@@ -15,7 +15,7 @@ import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.LocalTextStyle
-import androidx.compose.material.Text
+import androidx.compose.material3.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
@@ -49,9 +49,9 @@ data class DropDownItemData(
 )
 
 @Composable
-fun CusDropdown(label:String,options : List<DropDownItemData>,onSelected:(DropDownItemData) -> Unit) {
+fun CusDropdown(label:String,selected:DropDownItemData,options : List<DropDownItemData>,onSelected:(DropDownItemData) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    var selected by remember { mutableStateOf(DropDownItemData()) }
+    var selected by remember { mutableStateOf(selected) }
     Column {
         TextField(
             modifier = Modifier.fillMaxWidth(),
@@ -62,7 +62,7 @@ fun CusDropdown(label:String,options : List<DropDownItemData>,onSelected:(DropDo
             value = TextFieldValue(selected.name),
             onValueChange = {},
             readOnly = true,
-            label = { Text(label, style = MaterialTheme.typography.bodySmall) },
+            label = { Text(label, style = MaterialTheme.typography.titleSmall) },
             trailingIcon = {
                 IconButton(
                     onClick = { expanded = true },

@@ -1,19 +1,17 @@
 package com.mycampus.billingapp.data.repo
 
+import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
-import com.mycampus.billingapp.data.room.entities.BillItem
-import com.mycampus.billingapp.data.room.entities.BillItemCollection
-import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.data.models.UserDetails
-import com.mycampus.billingapp.data.room.RoomDao
-import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class UserRepository @Inject constructor(
+    private val context: Context,
     private val sharedPreferences: SharedPreferences,
 ) {
-
+    //    val sp = context.applicationContext.getSharedPreferences("my_shared_prefs", Context.MODE_PRIVATE)
+    val sp = sharedPreferences
     private val gson = Gson()
     private val keyUserDetails = "user_details"
 
@@ -23,9 +21,8 @@ class UserRepository @Inject constructor(
     }
 
 
-
     fun getUserDetails(): UserDetails? {
-        val userDetailsJson = sharedPreferences.getString(keyUserDetails, null)
+        val userDetailsJson = sp.getString(keyUserDetails, null)
         return if (userDetailsJson != null) {
             gson.fromJson(userDetailsJson, UserDetails::class.java)
         } else {

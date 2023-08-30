@@ -36,7 +36,7 @@ ViewModel(){
 
     fun restoreDatabase(context:Context,progressListener: RestoreProgressListener) {
         viewModelScope.launch {
-            appDatabase.restoreDatabase(context,progressListener)
+            appDatabase.restoreDatabase(progressListener)
         }
     }
 

@@ -46,6 +46,7 @@ import androidx.navigation.NavController
 import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.Utils
 import com.mycampus.billingapp.common.uicomponents.ConfirmationDialog
+import com.mycampus.billingapp.common.uicomponents.CusDropdown
 import com.mycampus.billingapp.common.uicomponents.CusDropdownSearch
 import com.mycampus.billingapp.common.uicomponents.DateTimePicker
 import com.mycampus.billingapp.common.uicomponents.DropDownItemData
@@ -74,7 +75,7 @@ fun HomeScreen(
     customerViewModel: CustomerViewModel,
     navController: NavController
 ) {
-    val userDetails = viewModel.getUserDetails()
+    val userDetails = viewModel.userDetails
     var isSettingsExpanded by remember { mutableStateOf(false) }
     var itemCol by remember { mutableStateOf(listOf<BillItemCollectionWithBillItems>()) }
     viewModel.allItemCollections.observeForever {
@@ -105,7 +106,7 @@ fun HomeScreen(
 
             if (userDetails != null) {
                 MainScreenFees(
-                    viewModel.getUserDetails() ?: UserDetails(),
+                    viewModel.userDetails ?: UserDetails(),
                     customerCol,
                     onProceedClicked = {},
                     navController = NavController(LocalContext.current), { billCol, list ->
@@ -956,7 +957,9 @@ fun SettingsPopup(
                     )
                 }
                 Spacer(Modifier.height(5.dp))
-                Divider(modifier = Modifier.fillMaxWidth().height(.5.dp),color = Gray)
+                Divider(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(.5.dp),color = Gray)
                 Spacer(modifier = Modifier.height(10.dp))
                 Column() {
                     if (isEditable) {
@@ -998,12 +1001,32 @@ fun SettingsPopup(
                                     userDetails.GST = it
                                 }
                             )
+
                             SettingsTextFieldSample(
                                 label = "Website",
                                 value = userDetails.website,
                                 onTextChanged = {
                                     userDetails.website = it
                                 })
+
+                            CusDropdown(label = "Dynamic Link",selected = DropDownItemData(
+                                if(userDetails.isDynamicLinkEnabled) "Enabled" else "Disabled",
+                                if(userDetails.isDynamicLinkEnabled) "Enabled" else "Disabled"
+                            ), options = listOf(
+                                DropDownItemData("Enabled","Enabled"),
+                                DropDownItemData("Disabled","Disabled")
+                            ), onSelected = {
+                                userDetails.isDynamicLinkEnabled = it.id == "Yes"
+                            })
+
+                            SettingsTextFieldSample(
+                                    label = "Promotion Message",
+                            value = userDetails.promotionMessage,
+                            onTextChanged = {
+                                userDetails.promotionMessage = it
+                            },
+                                lineCount = 3
+                            )
                         }
                     } else {
                         if (userDetails != UserDetails()) {
@@ -1014,6 +1037,8 @@ fun SettingsPopup(
                                 Text("Mobile: ${userDetails.mobile}")
                                 Text("GST No: ${userDetails.GST}")
                                 Text("Website: ${userDetails.website}")
+                                Text("Dynamic Link: ${if(userDetails.isDynamicLinkEnabled) "Enabled" else "Disabled"}")
+                                Text("Promotion Message: ${userDetails.promotionMessage}")
                             }
                         }
                     }
@@ -1098,7 +1123,9 @@ fun PrinterPopup(
                 }
                 Spacer(Modifier.height(5.dp))
 
-                Divider(modifier = Modifier.fillMaxWidth().height(.5.dp),color = Gray)
+                Divider(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(.5.dp),color = Gray)
                 if(pairedDevices.size > 0 || scannedDevices.size > 0 ) {
                     BluetoothDeviceList(
                         pairedDevices = pairedDevices,

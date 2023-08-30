@@ -116,7 +116,7 @@ fun BillDetailScreen(
     customerViewModel.allCustomers.observeForever {
         customerCol = it
     }
-    val user = viewModel.getUserDetails()
+    val user = viewModel.userDetails
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth(.95f),

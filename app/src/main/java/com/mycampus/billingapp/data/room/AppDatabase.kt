@@ -192,7 +192,7 @@ abstract class AppDatabase : RoomDatabase() {
                }
            }
        }*/
-    suspend fun restoreDatabase(context: Context, progressListener: RestoreProgressListener) {
+    suspend fun restoreDatabaseNew(context: Context, progressListener: RestoreProgressListener) {
         val backupDir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             "/myCampus/Backup"
@@ -268,6 +268,67 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
            progressListener.onProgressUpdated(100)
+        }
+    }
+    suspend fun restoreDatabase(progressListener: RestoreProgressListener) {
+        val backupDir = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            "/myCampus/Backup"
+        )
+        val backupBillItemCSVFile = File(backupDir.absolutePath + "/billitems.backup")
+        val backupBillItemsColCSVFile = File(backupDir.absolutePath + "/billitemsCol.backup")
+        val backupCustomersCSVFile = File(backupDir.absolutePath + "/customers.backup")
+
+        val totalRowCount = calculateTotalRowCount(
+            backupBillItemsColCSVFile,
+            backupBillItemCSVFile,
+            backupCustomersCSVFile
+        )
+        val currentRowCount = AtomicInteger(0)
+
+        if (backupBillItemsColCSVFile.exists()) {
+            restoreCsvFile(
+                backupBillItemsColCSVFile,
+                currentRowCount,
+                totalRowCount,
+                progressListener
+            ) { row ->
+                GlobalScope.launch {
+                    delay(200)
+
+                    billingDao().insertBillItemCol(parseCsvRowToBillItemsCol(row))
+                }
+            }
+        }
+
+        if (backupBillItemCSVFile.exists()) {
+            restoreCsvFile(
+                backupBillItemCSVFile,
+                currentRowCount,
+                totalRowCount,
+                progressListener
+            ) { row ->
+                GlobalScope.launch {
+                    billingDao().insertBillItem(parseCsvRowToBillItem(row))
+                }
+            }
+        }
+
+        if (backupCustomersCSVFile.exists()) {
+            restoreCsvFile(
+                backupCustomersCSVFile,
+                currentRowCount,
+                totalRowCount,
+                progressListener
+            ) { row ->
+                GlobalScope.launch {
+                    billingDao().insertCustomer(parseCsvRowToCustomerItem(row))
+                }
+            }
+        }
+
+        withContext(Dispatchers.Main) {
+            progressListener.onProgressUpdated(100)
         }
     }
 

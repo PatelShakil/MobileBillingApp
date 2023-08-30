@@ -28,8 +28,8 @@ object AppModule {
     }
 
     @Provides
-    fun provideUserRepository(sharedPreferences: SharedPreferences): UserRepository {
-        return UserRepository(sharedPreferences)
+    fun provideUserRepository(@ApplicationContext appContext : Context,sharedPreferences: SharedPreferences): UserRepository {
+        return UserRepository(appContext,sharedPreferences)
     }
     @Provides
     fun provideBillRepository(billingDao:RoomDao): BillRepository {

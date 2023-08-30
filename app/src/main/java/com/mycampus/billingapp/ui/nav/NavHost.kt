@@ -32,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -115,6 +116,7 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
     val collectionListExcel: MutableList<BillItemCollectionExcel> =
         emptyList<BillItemCollectionExcel>().toMutableList()
 
+    var shop by remember{mutableStateOf(UserDetails())}
 
     var isRestoreConfirm by remember { mutableStateOf(false) }
     var isPromotionClick by remember { mutableStateOf(false) }
@@ -165,9 +167,9 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
             },
             onSyncContacts = {
                              navController.navigate(Screen.Contact.route)
-
             },
             onPromotionClick = {
+                shop = userViewModel.userDetails!!
                 userViewModel.allSyncContacts.observeForever{
                     syncContacts = it
                 }
@@ -181,8 +183,12 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
             }
         }
         var progress by remember { mutableStateOf(0) }
+        LaunchedEffect(key1 = true, block = {
+
+        })
+
         if(isPromotionClick){
-            PromotionDialog(syncContacts){
+            PromotionDialog(shop,syncContacts){
                 isPromotionClick = !isPromotionClick
             }
         }
@@ -254,7 +260,7 @@ fun HeaderLayout(
     var isMenuExpanded by remember { mutableStateOf(false) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
     var isPrinterExpanded by remember { mutableStateOf(false) }
-    val userDetails = viewModel.getUserDetails()
+    val userDetails = viewModel.userDetails
 
 
     Column(
@@ -463,7 +469,7 @@ fun HeaderLayout(
 }
 
 @Composable
-fun PromotionDialog(list : List<ContactItem>,onDismiss:()->Unit) {
+fun PromotionDialog(shop:UserDetails,list : List<ContactItem>,onDismiss:()->Unit) {
     val context = LocalContext.current
     Dialog(onDismissRequest = {onDismiss()},
         properties = DialogProperties(
@@ -508,11 +514,20 @@ fun PromotionDialog(list : List<ContactItem>,onDismiss:()->Unit) {
                             }
                             Box(modifier = Modifier
                                 .background(MainColor, RoundedCornerShape(20.dp))
-                                .clickable{
-                                //Send Click
-                                val msg = "ecard.com/${it.mobileNo.replace(" ","")}"
-                                sendWhatsAppMessage(context,msg,it.mobileNo)
-                            }){
+                                .clickable {
+                                    //Send Click
+                                    var msg = "Dear ${it.name},\n\n"
+                                    msg += shop.promotionMessage
+                                    msg += if (shop.isDynamicLinkEnabled) "\n\nhttp://ecard.com/${
+                                        it.mobileNo.replace(
+                                            " ",
+                                            ""
+                                        )
+                                    }\n" else ""
+
+                                    msg += "\nThanks\n${shop.name}"
+                                    sendWhatsAppMessage(context, msg, it.mobileNo)
+                                }){
                                 Row(verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)) {
                                     Text("Send",

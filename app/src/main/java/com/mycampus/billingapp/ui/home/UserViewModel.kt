@@ -43,9 +43,8 @@ class UserViewModel @Inject constructor(
     }
 
 
-    fun getUserDetails(): UserDetails? {
-        return userRepository.getUserDetails()
-    }
+    val userDetails = userRepository.getUserDetails()
+
 
     val allItemCollections: LiveData<List<BillItemCollectionWithBillItems>> =
         billingRepository.getAllItemCollectionsWithFeeItems().asLiveData()
