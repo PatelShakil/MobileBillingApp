@@ -107,13 +107,13 @@ fun SettingsTextFieldSample(
     androidx.compose.material.TextField(
         value = value,
         onValueChange = {
-            onTextChanged(it)
+            onTextChanged(it.trim())
             value = it
         },
-        modifier = Modifier.fillMaxWidth(.95f),
+        modifier = Modifier.fillMaxWidth(),
         label = { Text(label, style = MaterialTheme.typography.titleSmall) },
         colors = TextFieldDefaults.textFieldColors(
-            backgroundColor = Color(0xFFEAE8F0),
+            backgroundColor = Color.White,
             focusedIndicatorColor = MainColor
         ),
         minLines = lineCount,

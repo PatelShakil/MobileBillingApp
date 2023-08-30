@@ -73,10 +73,10 @@ import com.mycampus.billingapp.ui.detail.BillDetailScreen
 import com.mycampus.billingapp.ui.home.HomeScreen
 import com.mycampus.billingapp.ui.home.MainColor
 import com.mycampus.billingapp.ui.home.PrinterPopup
-import com.mycampus.billingapp.ui.home.SettingsPopup
 import com.mycampus.billingapp.ui.home.UserViewModel
 import com.mycampus.billingapp.ui.home.bluetooth.BluetoothUiState
 import com.mycampus.billingapp.ui.home.bluetooth.BluetoothViewModel
+import com.mycampus.billingapp.ui.settings.SettingMainScreen
 
 @Composable
 fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Unit) {
@@ -116,11 +116,11 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
     val collectionListExcel: MutableList<BillItemCollectionExcel> =
         emptyList<BillItemCollectionExcel>().toMutableList()
 
-    var shop by remember{mutableStateOf(UserDetails())}
+    var shop by remember { mutableStateOf(UserDetails()) }
 
     var isRestoreConfirm by remember { mutableStateOf(false) }
     var isPromotionClick by remember { mutableStateOf(false) }
-    var syncContacts by remember{ mutableStateOf<List<ContactItem>>(emptyList()) }
+    var syncContacts by remember { mutableStateOf<List<ContactItem>>(emptyList()) }
     Column {
         HeaderLayout(title, state, userViewModel, onStartScan = {
             if (!isBluetoothEnabled) {
@@ -129,6 +129,9 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
             }
             btViewModel.startScan()
         }, onStopScan = btViewModel::stopScan,
+            onSettingClick = {
+                navController.navigate(Screen.Setting.route)
+            },
             {
                 navController.navigate(Screen.Customer.route)
             }, {
@@ -166,11 +169,11 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
                 viewModel.generateExcel(collectionListExcel)
             },
             onSyncContacts = {
-                             navController.navigate(Screen.Contact.route)
+                navController.navigate(Screen.Contact.route)
             },
             onPromotionClick = {
                 shop = userViewModel.userDetails!!
-                userViewModel.allSyncContacts.observeForever{
+                userViewModel.allSyncContacts.observeForever {
                     syncContacts = it
                 }
                 isPromotionClick = !isPromotionClick
@@ -187,8 +190,8 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
 
         })
 
-        if(isPromotionClick){
-            PromotionDialog(shop,syncContacts){
+        if (isPromotionClick) {
+            PromotionDialog(shop, syncContacts) {
                 isPromotionClick = !isPromotionClick
             }
         }
@@ -198,7 +201,7 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
                     isRestoreConfirm = false
                     progress = 0
                 }) {
-                viewModel.restoreDatabase(context,object : RestoreProgressListener {
+                viewModel.restoreDatabase(context, object : RestoreProgressListener {
                     override fun onProgressUpdated(percentage: Int) {
                         progress = percentage
                         Log.d("Progress", percentage.toString())
@@ -236,8 +239,12 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
                 title = "Backup & Restore"
             }
             composable(Screen.Contact.route) {
-                ContactMainScreen(viewModel = hiltViewModel(),navController)
+                ContactMainScreen(viewModel = hiltViewModel(), navController)
                 title = "Contacts"
+            }
+            composable(Screen.Setting.route) {
+                SettingMainScreen(viewModel = hiltViewModel(), navController = navController)
+                title = "Setting"
             }
         }
     }
@@ -250,12 +257,13 @@ fun HeaderLayout(
     viewModel: UserViewModel,
     onStartScan: () -> Unit,
     onStopScan: () -> Unit,
+    onSettingClick: () -> Unit,
     onCustomerClick: () -> Unit,
     onBackup: () -> Unit,
     onRestore: () -> Unit,
     onDownloadExcel: () -> Unit,
-    onSyncContacts:() -> Unit,
-    onPromotionClick:() -> Unit
+    onSyncContacts: () -> Unit,
+    onPromotionClick: () -> Unit
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
@@ -313,7 +321,7 @@ fun HeaderLayout(
                             onClick = {
                                 isMenuExpanded = false
                                 // Handle Settings menu item click
-                                isSettingsExpanded = true
+                                onSettingClick()
                             }
                         ) {
                             Icon(Icons.Default.Settings, "", tint = MainColor)
@@ -446,18 +454,6 @@ fun HeaderLayout(
 
     }
 
-
-
-    if (isSettingsExpanded) {
-        SettingsPopup(
-            userDetails ?: UserDetails(),
-            onDismissRequest = { isSettingsExpanded = false },
-            onSaveClicked = {
-                viewModel.saveUserDetails(it)
-            }
-        )
-    }
-
     if (isPrinterExpanded) {
         PrinterPopup(
             state.pairedDevices,
@@ -469,14 +465,15 @@ fun HeaderLayout(
 }
 
 @Composable
-fun PromotionDialog(shop:UserDetails,list : List<ContactItem>,onDismiss:()->Unit) {
+fun PromotionDialog(shop: UserDetails, list: List<ContactItem>, onDismiss: () -> Unit) {
     val context = LocalContext.current
-    Dialog(onDismissRequest = {onDismiss()},
+    Dialog(
+        onDismissRequest = { onDismiss() },
         properties = DialogProperties(
             usePlatformDefaultWidth = false
         )
     ) {
-        Card(modifier = Modifier.fillMaxWidth(.95f)){
+        Card(modifier = Modifier.fillMaxWidth(.95f)) {
             Column {
                 Spacer(modifier = Modifier.height(5.dp))
                 Row(
@@ -495,30 +492,47 @@ fun PromotionDialog(shop:UserDetails,list : List<ContactItem>,onDismiss:()->Unit
                     )
                 }
                 Spacer(Modifier.height(5.dp))
-                Divider(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(.5.dp), color = Color.Gray)
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(.5.dp), color = Color.Gray
+                )
                 Spacer(modifier = Modifier.height(5.dp))
-                LazyColumn(modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally){
-                    items(list){
-                        Row(verticalAlignment = Alignment.CenterVertically,
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    items(list) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(8.dp)) {
+                                .padding(8.dp)
+                        ) {
                             Column(modifier = Modifier.weight(.9f)) {
-                                Text(it.name,
-                                    fontSize = 14.sp)
-                                Text(it.mobileNo,
-                                    fontSize = 12.sp)
+                                Text(
+                                    it.name,
+                                    fontSize = 14.sp
+                                )
+                                Text(
+                                    it.mobileNo,
+                                    fontSize = 12.sp
+                                )
                             }
                             Box(modifier = Modifier
                                 .background(MainColor, RoundedCornerShape(20.dp))
                                 .clickable {
                                     //Send Click
                                     var msg = "Dear ${it.name},\n\n"
-                                    msg += shop.promotionMessage
-                                    msg += if (shop.isDynamicLinkEnabled) "\n\nhttp://ecard.com/${
+                                    msg += shop.promotionMessageENG
+                                    msg += "\n\n"
+                                    msg += shop.promotionMessageHND
+                                    msg += if (shop.isDynamicLinkEnabled) "\n\n${
+                                        if (shop.dynamicLink.startsWith(
+                                                "http"
+                                            )
+                                        ) shop.dynamicLink +"=" else "http://${shop.dynamicLink}="
+                                    }${
                                         it.mobileNo.replace(
                                             " ",
                                             ""
@@ -527,11 +541,15 @@ fun PromotionDialog(shop:UserDetails,list : List<ContactItem>,onDismiss:()->Unit
 
                                     msg += "\nThanks\n${shop.name}"
                                     sendWhatsAppMessage(context, msg, it.mobileNo)
-                                }){
-                                Row(verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)) {
-                                    Text("Send",
-                                        color = Color.White)
+                                }) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                ) {
+                                    Text(
+                                        "Send",
+                                        color = Color.White
+                                    )
 //                                    Icon(Icons.Default.Send, "", tint = Color.White)
                                 }
                             }

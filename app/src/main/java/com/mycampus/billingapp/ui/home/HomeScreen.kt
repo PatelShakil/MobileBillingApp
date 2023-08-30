@@ -1016,14 +1016,22 @@ fun SettingsPopup(
                                 DropDownItemData("Enabled","Enabled"),
                                 DropDownItemData("Disabled","Disabled")
                             ), onSelected = {
-                                userDetails.isDynamicLinkEnabled = it.id == "Yes"
+                                userDetails.isDynamicLinkEnabled = it.id == "Enabled"
                             })
 
                             SettingsTextFieldSample(
-                                    label = "Promotion Message",
-                            value = userDetails.promotionMessage,
+                                    label = "Promotion Message(English)",
+                            value = userDetails.promotionMessageENG,
                             onTextChanged = {
-                                userDetails.promotionMessage = it
+                                userDetails.promotionMessageENG = it
+                            },
+                                lineCount = 3
+                            )
+                            SettingsTextFieldSample(
+                                    label = "Promotion Message(Hindi)",
+                            value = userDetails.promotionMessageHND,
+                            onTextChanged = {
+                                userDetails.promotionMessageHND = it
                             },
                                 lineCount = 3
                             )
@@ -1038,7 +1046,8 @@ fun SettingsPopup(
                                 Text("GST No: ${userDetails.GST}")
                                 Text("Website: ${userDetails.website}")
                                 Text("Dynamic Link: ${if(userDetails.isDynamicLinkEnabled) "Enabled" else "Disabled"}")
-                                Text("Promotion Message: ${userDetails.promotionMessage}")
+                                Text("Promotion Message(English): ${userDetails.promotionMessageENG}")
+                                Text("Promotion Message(Hindi): ${userDetails.promotionMessageHND}")
                             }
                         }
                     }

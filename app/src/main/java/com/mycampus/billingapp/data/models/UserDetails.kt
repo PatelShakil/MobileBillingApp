@@ -6,7 +6,9 @@ data class UserDetails(
     var address: String = "",
     var mobile: String = "",
     var GST: String = "",
-    var promotionMessage : String = "",
+    var dynamicLink: String = "",
+    var promotionMessageENG : String = "",
+    var promotionMessageHND : String = "",
     var isDynamicLinkEnabled : Boolean = false,
     var website: String = ""
 )
