@@ -31,8 +31,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.mycampus.billingapp.ui.home.LightMainColor
-import com.mycampus.billingapp.ui.home.MainColor
+import com.mycampus.billingapp.common.LightMainColor
+import com.mycampus.billingapp.common.MainColor
 
 
 @Composable

@@ -2,23 +2,16 @@ package com.mycampus.billingapp.ui.nav
 
 import android.bluetooth.BluetoothManager
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
@@ -26,11 +19,8 @@ import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,17 +37,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mycampus.billingapp.R
-import com.mycampus.billingapp.common.Utils.Companion.sendWhatsAppMessage
+import com.mycampus.billingapp.common.MainColor
+import com.mycampus.billingapp.common.uicomponents.PrinterPopup
 import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
+import com.mycampus.billingapp.common.uicomponents.PromotionDialog
 import com.mycampus.billingapp.common.uicomponents.RestoreConfirmationDialog
 import com.mycampus.billingapp.data.models.BillItemCollectionExcel
 import com.mycampus.billingapp.data.models.UserDetails
@@ -73,8 +61,6 @@ import com.mycampus.billingapp.ui.contact.ContactMainScreen
 import com.mycampus.billingapp.ui.customer.CustomerScreen
 import com.mycampus.billingapp.ui.detail.BillDetailScreen
 import com.mycampus.billingapp.ui.home.HomeScreen
-import com.mycampus.billingapp.ui.home.MainColor
-import com.mycampus.billingapp.ui.home.PrinterPopup
 import com.mycampus.billingapp.ui.home.UserViewModel
 import com.mycampus.billingapp.ui.home.bluetooth.BluetoothUiState
 import com.mycampus.billingapp.ui.home.bluetooth.BluetoothViewModel
@@ -468,135 +454,3 @@ fun HeaderLayout(
     }
 }
 
-@Composable
-fun PromotionDialog(
-    shop: UserDetails,
-    list: List<ContactItem>,
-    navController: NavController,
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    Dialog(
-        onDismissRequest = { onDismiss() },
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Card(modifier = Modifier.fillMaxWidth(.95f)) {
-            Column {
-                Spacer(modifier = Modifier.height(5.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        painterResource(R.drawable.ic_promotion), "",
-                        tint = MainColor
-                    )
-                    Text(
-                        "Promotion",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontSize = 18.sp,
-                    )
-                }
-                Spacer(Modifier.height(5.dp))
-                Divider(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(.5.dp), color = Color.Gray
-                )
-                Spacer(modifier = Modifier.height(5.dp))
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    items(list) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp)
-                        ) {
-                            Column(modifier = Modifier.weight(.9f)) {
-                                Text(
-                                    it.name,
-                                    fontSize = 14.sp
-                                )
-                                Text(
-                                    it.mobileNo,
-                                    fontSize = 12.sp
-                                )
-                            }
-                            Box(modifier = Modifier
-                                .background(MainColor, RoundedCornerShape(20.dp))
-                                .clickable {
-                                    //Send Click
-
-                                    if (shop.promotionMessageENG.isNotEmpty() || shop.promotionMessageHND.isNotEmpty()) {
-                                        var msg = "Dear ${it.name},\n\n"
-
-                                        if (shop.promotionMessageENG.isEmpty()) {
-                                            Toast
-                                                .makeText(
-                                                    context,
-                                                    "Promotion Message was Empty",
-                                                    Toast.LENGTH_SHORT
-                                                )
-                                                .show()
-                                            onDismiss()
-                                            navController.navigate(Screen.Setting.route)
-                                            return@clickable
-                                        }
-                                        msg += shop.promotionMessageENG
-                                        if (shop.promotionMessageHND.isEmpty()) {
-                                            Toast
-                                                .makeText(
-                                                    context,
-                                                    "Promotion Message was Empty",
-                                                    Toast.LENGTH_SHORT
-                                                )
-                                                .show()
-                                            onDismiss()
-                                            navController.navigate(Screen.Setting.route)
-                                            return@clickable
-                                        }
-                                        msg += "\n\n"
-                                        msg += shop.promotionMessageHND
-
-
-                                        msg += if (shop.isDynamicLinkEnabled) "\n\n${
-                                            if (shop.dynamicLink.startsWith(
-                                                    "http"
-                                                )
-                                            ) shop.dynamicLink + "=" else "http://${shop.dynamicLink}="
-                                        }${
-                                            it.mobileNo.replace(
-                                                " ",
-                                                ""
-                                            )
-                                        }\n" else ""
-
-                                        msg += "\nThanks\n${shop.name}"
-                                        sendWhatsAppMessage(context, msg, it.mobileNo)
-                                    }
-                                }) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                                ) {
-                                    Text(
-                                        "Send",
-                                        color = Color.White
-                                    )
-//                                    Icon(Icons.Default.Send, "", tint = Color.White)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-    }
-}

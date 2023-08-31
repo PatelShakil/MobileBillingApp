@@ -29,7 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.mycampus.billingapp.R
-import com.mycampus.billingapp.ui.home.MainColor
+import com.mycampus.billingapp.common.MainColor
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -115,7 +115,8 @@ fun DateTimePicker(
                            datePickerDialogShown = true
 
                        },
-                       tint = MainColor)
+                       tint = MainColor
+                       )
         },
         label = {
                 Text(label,

@@ -14,7 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.mycampus.billingapp.ui.home.MainColor
+import com.mycampus.billingapp.common.MainColor
 
 @Composable
 fun ProgressBarCus(onDismiss:()->Unit) {

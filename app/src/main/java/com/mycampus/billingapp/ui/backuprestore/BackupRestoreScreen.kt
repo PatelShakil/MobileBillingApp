@@ -26,7 +26,7 @@ import com.mycampus.billingapp.data.room.RestoreProgressListener
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.CustomerItem
-import com.mycampus.billingapp.ui.home.MainColor
+import com.mycampus.billingapp.common.MainColor
 
 
 @Composable

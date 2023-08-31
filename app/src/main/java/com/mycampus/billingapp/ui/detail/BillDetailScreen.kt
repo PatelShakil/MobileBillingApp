@@ -22,10 +22,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -57,6 +55,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import com.mycampus.billingapp.R
+import com.mycampus.billingapp.common.MainColor
 import com.mycampus.billingapp.common.ScrollableCapturable
 import com.mycampus.billingapp.common.Utils
 import com.mycampus.billingapp.common.Utils.Companion.convertLongToDate
@@ -64,9 +63,9 @@ import com.mycampus.billingapp.common.Utils.Companion.saveFile
 import com.mycampus.billingapp.common.Utils.Companion.sendWhatsAppMessage
 import com.mycampus.billingapp.common.Utils.Companion.viewPdf
 import com.mycampus.billingapp.common.rememberCaptureController
-import com.mycampus.billingapp.common.uicomponents.DatePickerDialogCustom
 import com.mycampus.billingapp.common.uicomponents.DottedDivider
 import com.mycampus.billingapp.common.uicomponents.ErrorMessage
+import com.mycampus.billingapp.common.uicomponents.FilterPopup
 import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
 import com.mycampus.billingapp.data.models.BillItemCollectionPrint
 import com.mycampus.billingapp.data.models.UserDetails
@@ -74,7 +73,6 @@ import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.data.room.entities.CustomerItem
 import com.mycampus.billingapp.ui.customer.CustomerViewModel
-import com.mycampus.billingapp.ui.home.MainColor
 import com.mycampus.billingapp.ui.home.UserViewModel
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -191,7 +189,7 @@ fun BillDetailScreen(
 
                 if (isOnline) {
                     itemCol = itemColOg.filter {
-                        Utils.convertLongToDate(
+                        convertLongToDate(
                             it.itemCollection.bill_date,
                             "dd-MM-yyyy"
                         ) == selectedDate &&
@@ -200,7 +198,7 @@ fun BillDetailScreen(
                 }
                 if (isCash) {
                     itemCol = itemColOg.filter {
-                        Utils.convertLongToDate(
+                        convertLongToDate(
                             it.itemCollection.bill_date,
                             "dd-MM-yyyy"
                         ) == selectedDate &&
@@ -209,7 +207,7 @@ fun BillDetailScreen(
                 }
                 if (!isCash && !isOnline || (isCash && isOnline)) {
                     itemCol = itemColOg.filter {
-                        Utils.convertLongToDate(
+                        convertLongToDate(
                             it.itemCollection.bill_date,
                             "dd-MM-yyyy"
                         ) == selectedDate
@@ -244,7 +242,6 @@ fun BillDetailScreen(
                     }
                 }
 
-                var isViewLaidOut by remember { mutableStateOf(false) }
                 val captureController = rememberCaptureController()
                 ScrollableCapturable(controller = captureController, onCaptured ={bitmap , e ->
                     if(bitmap != null) {
@@ -270,93 +267,6 @@ fun BillDetailScreen(
                 Spacer(modifier = Modifier.height(50.dp))
                 ProgressBarCus {
 
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun FilterPopup(onDismiss: () -> Unit, onConfirm: (String, Boolean, Boolean) -> Unit) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        var date by remember { mutableStateOf("") }
-        var isCash by remember { mutableStateOf(false) }
-        var isOnline by remember { mutableStateOf(false) }
-        Card(modifier = Modifier.fillMaxWidth(.95f)) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Card(modifier = Modifier.fillMaxWidth(.95f)) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.White),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Spacer(modifier = Modifier.height(15.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_filter),
-                                "",
-                                tint = MainColor
-                            )
-                            Text("Bill Details Filter")
-                        }
-                        Divider(
-                            modifier = Modifier
-                                .fillMaxWidth(.95f)
-                                .height(1.dp), color = Color.Gray
-                        )
-                        Spacer(Modifier.height(5.dp))
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxWidth(.95f)
-                        ) {
-                            DatePickerDialogCustom(
-                                date = "",
-                                label = "Date",
-                                onDateSelect = { year, month, day ->
-                                    date = "$day-$month-$year"
-                                })
-                            Row(
-                                modifier = Modifier.fillMaxWidth(.95f),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("Payment Mode : ")
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(checked = isCash, onCheckedChange = {
-                                        isCash = !isCash
-                                    })
-                                    Text("Cash")
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(checked = isOnline, onCheckedChange = {
-                                        isOnline = !isOnline
-                                    })
-                                    Text("Online")
-                                }
-                            }
-                            Button(onClick = {
-                                onConfirm(date, isOnline, isCash)
-                                onDismiss()
-                            }, modifier = Modifier.fillMaxWidth(.8f)) {
-                                Text(text = "Apply")
-                            }
-                            Spacer(modifier = Modifier.height(10.dp))
-                        }
-                    }
                 }
             }
         }

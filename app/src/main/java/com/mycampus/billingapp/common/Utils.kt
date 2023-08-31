@@ -13,6 +13,7 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import android.view.View
+import androidx.compose.ui.graphics.Color
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -307,3 +308,5 @@ class Utils {
     }
 }
 
+val MainColor = Color(0xFF00638E)
+val LightMainColor = Color(0xFFD2E1F1)

@@ -38,7 +38,7 @@ import com.mycampus.billingapp.common.uicomponents.CusDropdown
 import com.mycampus.billingapp.common.uicomponents.DropDownItemData
 import com.mycampus.billingapp.common.uicomponents.SettingsTextFieldSample
 import com.mycampus.billingapp.data.models.UserDetails
-import com.mycampus.billingapp.ui.home.MainColor
+import com.mycampus.billingapp.common.MainColor
 import com.mycampus.billingapp.ui.home.UserViewModel
 
 @Composable

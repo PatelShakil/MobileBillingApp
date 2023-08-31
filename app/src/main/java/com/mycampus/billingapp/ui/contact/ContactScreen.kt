@@ -89,10 +89,6 @@ fun ContactMainScreen(viewModel : UserViewModel,navController: NavController) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = {
-                        // Perform the sync action with selectedContacts set
-                        // You can print or process the selectedContacts set here
-//                    println("Selected Contacts: ${selectedContacts.toList().toString()}")
-
                         viewModel.saveContactList(selectedContacts)
                         navController.popBackStack()
                         Toast.makeText(

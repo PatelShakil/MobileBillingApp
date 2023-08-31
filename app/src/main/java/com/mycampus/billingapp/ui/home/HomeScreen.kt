@@ -1,28 +1,46 @@
 package com.mycampus.billingapp.ui.home
 
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.graphics.Color
-//import androidx.compose.ui.text.font.FontWeight
-//import androidx.compose.ui.text.style.TextAlign
-//import androidx.compose.ui.window.DialogProperties
-import android.annotation.SuppressLint
 import android.util.Log
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Checkbox
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,31 +55,29 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import com.mycampus.billingapp.R
+import com.mycampus.billingapp.common.LightMainColor
+import com.mycampus.billingapp.common.MainColor
 import com.mycampus.billingapp.common.Utils
 import com.mycampus.billingapp.common.uicomponents.ConfirmationDialog
-import com.mycampus.billingapp.common.uicomponents.CusDropdown
 import com.mycampus.billingapp.common.uicomponents.CusDropdownSearch
 import com.mycampus.billingapp.common.uicomponents.DateTimePicker
 import com.mycampus.billingapp.common.uicomponents.DropDownItemData
 import com.mycampus.billingapp.common.uicomponents.GetAmount
 import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
 import com.mycampus.billingapp.common.uicomponents.SampleTextFieldDouble
-import com.mycampus.billingapp.common.uicomponents.SettingsTextFieldSample
+import com.mycampus.billingapp.common.uicomponents.SettingsPopup
 import com.mycampus.billingapp.data.models.BillItemCollectionPrint
+import com.mycampus.billingapp.data.models.CollectFeeData
 import com.mycampus.billingapp.data.models.UserDetails
 import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.data.room.entities.CustomerItem
-import com.mycampus.billingapp.domain.bluetooth.BluetoothDevice
-import com.mycampus.billingapp.ui.customer.AddCustomerPopupScreen
+import com.mycampus.billingapp.common.uicomponents.AddCustomerPopupScreen
 import com.mycampus.billingapp.ui.customer.CustomerViewModel
 import com.mycampus.billingapp.ui.nav.Screen
 import java.time.LocalDateTime
@@ -267,14 +283,6 @@ fun BottomCard(
     }
 }
 
-val MainColor = Color(0xFF00638E)
-val LightMainColor = Color(0xFFD2E1F1)
-
-data class CollectFeeData(
-    val totalAmount: Double = 0.0,
-    val discount: Double = 0.0,
-//    val othrItemlist: List<OtherItemsInfo>
-)
 
 @Composable
 fun MainScreenFees(
@@ -926,320 +934,4 @@ fun HeaderScreen(userDetails: UserDetails?, onSetUserDetails: () -> Unit) {
 
 }
 
-@Composable
-fun SettingsPopup(
-    userDetail: UserDetails?,
-    onDismissRequest: () -> Unit,
-    onSaveClicked: (UserDetails) -> Unit
-) {
-    val userDetails by remember { mutableStateOf(userDetail!!) }
-    var isEditable by remember { mutableStateOf(false) }
-    Dialog(
-        onDismissRequest = onDismissRequest,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFEAE9F0))
-                    .padding(10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                    Icon(Icons.Default.Settings,"",
-                        tint = MainColor)
-                    Text(
-                        "Settings",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontSize = 18.sp,
-                    )
-                }
-                Spacer(Modifier.height(5.dp))
-                Divider(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(.5.dp),color = Gray)
-                Spacer(modifier = Modifier.height(10.dp))
-                Column() {
-                    if (isEditable) {
-                        Column {
-                            SettingsTextFieldSample(
-                                label = "Name",
-                                value = userDetails.name,
-                                onTextChanged = {
-                                    userDetails.name = it
-                                })
-                            SettingsTextFieldSample(
-                                label = "Email",
-                                value = userDetails.email,
-                                onTextChanged = {
-                                    userDetails.email = it
-                                },
-                                KeyboardType.Email
-                            )
-                            SettingsTextFieldSample(
-                                label = "Address",
-                                value = userDetails.address,
-                                onTextChanged = {
-                                    userDetails.address = it
-                                },
-                                lineCount = 3
-                            )
-                            SettingsTextFieldSample(
-                                label = "Mobile",
-                                value = userDetails.mobile,
-                                onTextChanged = {
-                                    userDetails.mobile = it
-                                },
-                                KeyboardType.Phone
-                            )
-                            SettingsTextFieldSample(
-                                label = "GST No.",
-                                value = userDetails.GST,
-                                onTextChanged = {
-                                    userDetails.GST = it
-                                }
-                            )
 
-                            SettingsTextFieldSample(
-                                label = "Website",
-                                value = userDetails.website,
-                                onTextChanged = {
-                                    userDetails.website = it
-                                })
-
-                            CusDropdown(label = "Dynamic Link",selected = DropDownItemData(
-                                if(userDetails.isDynamicLinkEnabled) "Enabled" else "Disabled",
-                                if(userDetails.isDynamicLinkEnabled) "Enabled" else "Disabled"
-                            ), options = listOf(
-                                DropDownItemData("Enabled","Enabled"),
-                                DropDownItemData("Disabled","Disabled")
-                            ), onSelected = {
-                                userDetails.isDynamicLinkEnabled = it.id == "Enabled"
-                            })
-
-                            SettingsTextFieldSample(
-                                    label = "Promotion Message(English)",
-                            value = userDetails.promotionMessageENG,
-                            onTextChanged = {
-                                userDetails.promotionMessageENG = it
-                            },
-                                lineCount = 3
-                            )
-                            SettingsTextFieldSample(
-                                    label = "Promotion Message(Hindi)",
-                            value = userDetails.promotionMessageHND,
-                            onTextChanged = {
-                                userDetails.promotionMessageHND = it
-                            },
-                                lineCount = 3
-                            )
-                        }
-                    } else {
-                        if (userDetails != UserDetails()) {
-                            Column {
-                                Text("Name: ${userDetails.name}")
-                                Text("Email: ${userDetails.email}")
-                                Text("Address: ${userDetails.address}")
-                                Text("Mobile: ${userDetails.mobile}")
-                                Text("GST No: ${userDetails.GST}")
-                                Text("Website: ${userDetails.website}")
-                                Text("Dynamic Link: ${if(userDetails.isDynamicLinkEnabled) "Enabled" else "Disabled"}")
-                                Text("Promotion Message(English): ${userDetails.promotionMessageENG}")
-                                Text("Promotion Message(Hindi): ${userDetails.promotionMessageHND}")
-                            }
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    if (isEditable) {
-                        Button(
-                            onClick = {
-                                isEditable = false
-                                onSaveClicked(userDetails)
-                                onDismissRequest()
-                            }
-                        ) {
-                            Text("Save")
-                        }
-
-                    } else {
-                        Button(
-                            onClick = {
-                                isEditable = true
-                            }
-                        ) {
-                            Text(if (userDetails == UserDetails()) "Add" else "Edit")
-                        }
-                        Button(
-                            onClick = { onDismissRequest() }
-                        ) {
-                            Text("Close")
-                        }
-                    }
-                }
-
-            }
-        }
-    }
-
-}
-
-
-@Composable
-fun PrinterPopup(
-    pairedDevices: List<com.mycampus.billingapp.domain.bluetooth.BluetoothDevice>,
-    scannedDevices: List<com.mycampus.billingapp.domain.bluetooth.BluetoothDevice>,
-    onStartScan: () -> Unit,
-    onStopScan: () -> Unit,
-    onDismissRequest: () -> Unit
-) {
-    var isStart by remember { mutableStateOf(false) }
-    var isStop by remember { mutableStateOf(true) }
-    Dialog(
-        onDismissRequest = onDismissRequest,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .background(Color(0xFFEAE9F0))
-                    .padding(10.dp)
-            ) {
-
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                    Icon(painterResource(R.drawable.ic_printer),"",
-                        tint = MainColor)
-                    Text(
-                        "Printer Connection",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontSize = 18.sp,
-                    )
-                }
-                Spacer(Modifier.height(5.dp))
-
-                Divider(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(.5.dp),color = Gray)
-                if(pairedDevices.size > 0 || scannedDevices.size > 0 ) {
-                    BluetoothDeviceList(
-                        pairedDevices = pairedDevices,
-                        scannedDevices = scannedDevices,
-                        onClick = {},
-                        modifier = Modifier
-                            .padding(vertical = 20.dp)
-                            .fillMaxHeight(.7f)
-                    )
-                }
-                if(pairedDevices.isEmpty()){
-                    Text("No Device Found",
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth())
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceAround
-                ) {
-                    if (isStop) {
-                        Button(onClick = {
-                            onStartScan()
-                            isStart = true
-                            isStop = false
-                        }) {
-                            Text(text = "Start scan")
-
-                        }
-                    }
-                    if (isStart) {
-                        Button(onClick = {
-                            onStopScan()
-                            isStart = false
-                            isStop = true
-                        }) {
-                            Text(text = "Stop scan")
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@SuppressLint("MissingPermission")
-@Composable
-fun BluetoothDeviceList(
-    pairedDevices: List<com.mycampus.billingapp.domain.bluetooth.BluetoothDevice>,
-    scannedDevices: List<com.mycampus.billingapp.domain.bluetooth.BluetoothDevice>,
-    onClick: (com.mycampus.billingapp.domain.bluetooth.BluetoothDevice) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyColumn(
-        modifier = modifier.wrapContentHeight(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        item {
-            Text(
-                text = "Paired Devices",
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(8.dp)
-            )
-        }
-        items(pairedDevices) { device ->
-            BTDeviceItem(device = device, onClick = onClick)
-        }
-
-        item {
-            Text(
-                text = "Scanned Devices",
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(8.dp)
-            )
-        }
-        items(scannedDevices) { device ->
-            BTDeviceItem(device = device, onClick = onClick)
-        }
-    }
-}
-
-@Composable
-fun BTDeviceItem(device: BluetoothDevice, onClick: (BluetoothDevice) -> Unit) {
-    Card(modifier = Modifier
-        .fillMaxWidth()
-        .padding(vertical = 5.dp)
-        .clickable { onClick(device) }) {
-        Text(
-            text = device.name ?: "(No name)",
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 7.dp, horizontal = 5.dp)
-                .padding(start = 10.dp),
-            style = MaterialTheme.typography.titleSmall
-        )
-    }
-
-}
