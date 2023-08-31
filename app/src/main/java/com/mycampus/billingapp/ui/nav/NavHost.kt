@@ -2,6 +2,7 @@ package com.mycampus.billingapp.ui.nav
 
 import android.bluetooth.BluetoothManager
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -50,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -172,7 +174,10 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
                 navController.navigate(Screen.Contact.route)
             },
             onPromotionClick = {
-                shop = userViewModel.userDetails!!
+                userViewModel.getUser()
+                userViewModel.userDetails.observeForever{
+                    shop = it
+                }
                 userViewModel.allSyncContacts.observeForever {
                     syncContacts = it
                 }
@@ -191,7 +196,7 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
         })
 
         if (isPromotionClick) {
-            PromotionDialog(shop, syncContacts) {
+            PromotionDialog(shop,list = syncContacts, navController =  navController) {
                 isPromotionClick = !isPromotionClick
             }
         }
@@ -268,7 +273,6 @@ fun HeaderLayout(
     var isMenuExpanded by remember { mutableStateOf(false) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
     var isPrinterExpanded by remember { mutableStateOf(false) }
-    val userDetails = viewModel.userDetails
 
 
     Column(
@@ -465,7 +469,12 @@ fun HeaderLayout(
 }
 
 @Composable
-fun PromotionDialog(shop: UserDetails, list: List<ContactItem>, onDismiss: () -> Unit) {
+fun PromotionDialog(
+    shop: UserDetails,
+    list: List<ContactItem>,
+    navController: NavController,
+    onDismiss: () -> Unit
+) {
     val context = LocalContext.current
     Dialog(
         onDismissRequest = { onDismiss() },
@@ -523,24 +532,54 @@ fun PromotionDialog(shop: UserDetails, list: List<ContactItem>, onDismiss: () ->
                                 .background(MainColor, RoundedCornerShape(20.dp))
                                 .clickable {
                                     //Send Click
-                                    var msg = "Dear ${it.name},\n\n"
-                                    msg += shop.promotionMessageENG
-                                    msg += "\n\n"
-                                    msg += shop.promotionMessageHND
-                                    msg += if (shop.isDynamicLinkEnabled) "\n\n${
-                                        if (shop.dynamicLink.startsWith(
-                                                "http"
-                                            )
-                                        ) shop.dynamicLink +"=" else "http://${shop.dynamicLink}="
-                                    }${
-                                        it.mobileNo.replace(
-                                            " ",
-                                            ""
-                                        )
-                                    }\n" else ""
 
-                                    msg += "\nThanks\n${shop.name}"
-                                    sendWhatsAppMessage(context, msg, it.mobileNo)
+                                    if (shop.promotionMessageENG.isNotEmpty() || shop.promotionMessageHND.isNotEmpty()) {
+                                        var msg = "Dear ${it.name},\n\n"
+
+                                        if (shop.promotionMessageENG.isEmpty()) {
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    "Promotion Message was Empty",
+                                                    Toast.LENGTH_SHORT
+                                                )
+                                                .show()
+                                            onDismiss()
+                                            navController.navigate(Screen.Setting.route)
+                                            return@clickable
+                                        }
+                                        msg += shop.promotionMessageENG
+                                        if (shop.promotionMessageHND.isEmpty()) {
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    "Promotion Message was Empty",
+                                                    Toast.LENGTH_SHORT
+                                                )
+                                                .show()
+                                            onDismiss()
+                                            navController.navigate(Screen.Setting.route)
+                                            return@clickable
+                                        }
+                                        msg += "\n\n"
+                                        msg += shop.promotionMessageHND
+
+
+                                        msg += if (shop.isDynamicLinkEnabled) "\n\n${
+                                            if (shop.dynamicLink.startsWith(
+                                                    "http"
+                                                )
+                                            ) shop.dynamicLink + "=" else "http://${shop.dynamicLink}="
+                                        }${
+                                            it.mobileNo.replace(
+                                                " ",
+                                                ""
+                                            )
+                                        }\n" else ""
+
+                                        msg += "\nThanks\n${shop.name}"
+                                        sendWhatsAppMessage(context, msg, it.mobileNo)
+                                    }
                                 }) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,

@@ -75,7 +75,13 @@ fun HomeScreen(
     customerViewModel: CustomerViewModel,
     navController: NavController
 ) {
-    val userDetails = viewModel.userDetails
+    var userDetails by remember{ mutableStateOf(UserDetails()) }
+    LaunchedEffect(true){
+        viewModel.getUser()
+    }
+    viewModel.userDetails.observeForever {
+        userDetails = it
+    }
     var isSettingsExpanded by remember { mutableStateOf(false) }
     var itemCol by remember { mutableStateOf(listOf<BillItemCollectionWithBillItems>()) }
     viewModel.allItemCollections.observeForever {
@@ -104,9 +110,9 @@ fun HomeScreen(
 
             var billItemCollectionPrint by remember { mutableStateOf<BillItemCollectionPrint?>(null) }
 
-            if (userDetails != null) {
+            if (userDetails != UserDetails()) {
                 MainScreenFees(
-                    viewModel.userDetails ?: UserDetails(),
+                    userDetails,
                     customerCol,
                     onProceedClicked = {},
                     navController = NavController(LocalContext.current), { billCol, list ->

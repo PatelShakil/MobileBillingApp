@@ -2,6 +2,7 @@ package com.mycampus.billingapp.ui.home
 
 import android.content.Context
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
@@ -42,8 +43,13 @@ class UserViewModel @Inject constructor(
         userRepository.saveUserDetails(userDetails)
     }
 
-
-    val userDetails = userRepository.getUserDetails()
+    var userDetails = MutableLiveData<UserDetails>()
+    fun getUser() = viewModelScope.launch {
+        userDetails.value = userRepository.getUserDetails()
+    }
+    init{
+        getUser()
+    }
 
 
     val allItemCollections: LiveData<List<BillItemCollectionWithBillItems>> =
