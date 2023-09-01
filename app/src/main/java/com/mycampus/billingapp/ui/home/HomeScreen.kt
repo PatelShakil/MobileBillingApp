@@ -93,6 +93,7 @@ fun HomeScreen(
 ) {
     var userDetails by remember{ mutableStateOf(UserDetails()) }
     LaunchedEffect(true){
+        navController.navigate(Screen.BackupRestore.route)
         viewModel.getUser()
     }
     viewModel.userDetails.observeForever {
