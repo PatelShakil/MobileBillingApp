@@ -226,7 +226,7 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
                 title = "Customers"
             }
             composable(Screen.BackupRestore.route) {
-                BackupRestoreScreen(viewModel = hiltViewModel())
+                BackupRestoreScreen(viewModel = hiltViewModel(),navController)
                 title = "Backup & Restore"
             }
             composable(Screen.Contact.route) {

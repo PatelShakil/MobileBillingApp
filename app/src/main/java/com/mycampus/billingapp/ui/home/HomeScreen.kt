@@ -62,6 +62,7 @@ import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.LightMainColor
 import com.mycampus.billingapp.common.MainColor
 import com.mycampus.billingapp.common.Utils
+import com.mycampus.billingapp.common.uicomponents.AddCustomerPopupScreen
 import com.mycampus.billingapp.common.uicomponents.ConfirmationDialog
 import com.mycampus.billingapp.common.uicomponents.CusDropdownSearch
 import com.mycampus.billingapp.common.uicomponents.DateTimePicker
@@ -77,7 +78,6 @@ import com.mycampus.billingapp.data.room.entities.BillItem
 import com.mycampus.billingapp.data.room.entities.BillItemCollection
 import com.mycampus.billingapp.data.room.entities.BillItemCollectionWithBillItems
 import com.mycampus.billingapp.data.room.entities.CustomerItem
-import com.mycampus.billingapp.common.uicomponents.AddCustomerPopupScreen
 import com.mycampus.billingapp.ui.customer.CustomerViewModel
 import com.mycampus.billingapp.ui.nav.Screen
 import java.time.LocalDateTime
@@ -93,7 +93,6 @@ fun HomeScreen(
 ) {
     var userDetails by remember{ mutableStateOf(UserDetails()) }
     LaunchedEffect(true){
-        navController.navigate(Screen.BackupRestore.route)
         viewModel.getUser()
     }
     viewModel.userDetails.observeForever {
