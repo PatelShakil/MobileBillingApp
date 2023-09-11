@@ -116,7 +116,8 @@ fun BillDetailScreen(
     }
     var user by remember{mutableStateOf(UserDetails())}
     viewModel.userDetails.observeForever {
-        user = it
+        if(it != null)
+            user = it
     }
     Column(modifier = Modifier.fillMaxSize()) {
         Row(

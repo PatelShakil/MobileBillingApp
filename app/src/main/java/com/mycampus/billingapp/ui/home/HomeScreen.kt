@@ -70,7 +70,6 @@ import com.mycampus.billingapp.common.uicomponents.DropDownItemData
 import com.mycampus.billingapp.common.uicomponents.GetAmount
 import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
 import com.mycampus.billingapp.common.uicomponents.SampleTextFieldDouble
-import com.mycampus.billingapp.common.uicomponents.SettingsPopup
 import com.mycampus.billingapp.data.models.BillItemCollectionPrint
 import com.mycampus.billingapp.data.models.CollectFeeData
 import com.mycampus.billingapp.data.models.UserDetails
@@ -96,7 +95,9 @@ fun HomeScreen(
         viewModel.getUser()
     }
     viewModel.userDetails.observeForever {
-        userDetails = it
+        if(it != null) {
+            userDetails = it
+        }
     }
     var isSettingsExpanded by remember { mutableStateOf(false) }
     var itemCol by remember { mutableStateOf(listOf<BillItemCollectionWithBillItems>()) }
@@ -211,13 +212,9 @@ fun HomeScreen(
 
     }
     if (isSettingsExpanded) {
-        SettingsPopup(
-            userDetails ?: UserDetails(),
-            onDismissRequest = { isSettingsExpanded = false },
-            onSaveClicked = {
-                viewModel.saveUserDetails(it)
-            }
-        )
+        LaunchedEffect(key1 = true){
+            navController.navigate(Screen.Setting.route)
+        }
     }
 }
 

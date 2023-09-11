@@ -34,18 +34,19 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.mycampus.billingapp.common.MainColor
 import com.mycampus.billingapp.common.uicomponents.CusDropdown
 import com.mycampus.billingapp.common.uicomponents.DropDownItemData
 import com.mycampus.billingapp.common.uicomponents.SettingsTextFieldSample
 import com.mycampus.billingapp.data.models.UserDetails
-import com.mycampus.billingapp.common.MainColor
 import com.mycampus.billingapp.ui.home.UserViewModel
 
 @Composable
 fun SettingMainScreen(viewModel : UserViewModel,navController: NavController) {
     var userDetails by remember{ mutableStateOf(UserDetails()) }
     viewModel.userDetails.observeForever {
-        userDetails = it
+        if(it != null)
+            userDetails = it
     }
 
     Column(modifier = Modifier

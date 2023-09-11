@@ -43,9 +43,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mycampus.billingapp.R
 import com.mycampus.billingapp.common.MainColor
-import com.mycampus.billingapp.common.Utils.*
-import com.mycampus.billingapp.common.uicomponents.*
+import com.mycampus.billingapp.common.uicomponents.PrinterPopup
 import com.mycampus.billingapp.common.uicomponents.ProgressBarCus
+import com.mycampus.billingapp.common.uicomponents.PromotionDialog
 import com.mycampus.billingapp.common.uicomponents.RestoreConfirmationDialog
 import com.mycampus.billingapp.data.models.BillItemCollectionExcel
 import com.mycampus.billingapp.data.models.UserDetails
@@ -162,7 +162,8 @@ fun AppNavigation(viewModel: BackupRestoreViewModel, onEnableBluetooth: () -> Un
             onPromotionClick = {
                 userViewModel.getUser()
                 userViewModel.userDetails.observeForever{
-                    shop = it
+                    if(it != null)
+                        shop = it
                 }
                 userViewModel.allSyncContacts.observeForever {
                     syncContacts = it
