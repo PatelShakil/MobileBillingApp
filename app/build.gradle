@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace 'com.mycampus.billingapp'
+    namespace 'com.shakilpatel.mobilebilling'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.mycampus.billingapp"
+        applicationId "com.shakilpatel.mobilebilling"
         minSdk 26
         targetSdk 33
         versionCode 1
